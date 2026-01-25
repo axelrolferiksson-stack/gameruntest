@@ -203,6 +203,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_child_of_profile: { Args: { profile_id: string }; Returns: boolean }
       is_parent_of_profile: { Args: { profile_id: string }; Returns: boolean }
     }
     Enums: {
