@@ -1,6 +1,17 @@
 import { motion } from "framer-motion";
-import { Clock, Activity, Gift, MoreVertical } from "lucide-react";
+import { Clock, Activity, Gift, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 
 interface ChildCardProps {
   name: string;
@@ -10,6 +21,7 @@ interface ChildCardProps {
   isLocked: boolean;
   onGrantTime?: () => void;
   onViewDetails?: () => void;
+  onRemove?: () => void;
 }
 
 export const ChildCard = ({
@@ -19,7 +31,7 @@ export const ChildCard = ({
   activityProgress,
   isLocked,
   onGrantTime,
-  onViewDetails,
+  onRemove,
 }: ChildCardProps) => {
   const hours = Math.floor(screenTimeRemaining / 60);
   const mins = screenTimeRemaining % 60;
@@ -53,9 +65,27 @@ export const ChildCard = ({
             </span>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={onViewDetails}>
-          <MoreVertical className="w-5 h-5" />
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive">
+              <Trash2 className="w-5 h-5" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove {name}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will unlink {name} from your account. You can always add them back later.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onRemove} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
