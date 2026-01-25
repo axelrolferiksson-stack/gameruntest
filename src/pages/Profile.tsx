@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/BottomNav";
-import { Settings, Edit2, Camera, Star, Clock, Users, Loader2, Minus, Plus } from "lucide-react";
+import { Settings, Edit2, Camera, Star, Clock, Users, Loader2, Minus, Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+import { useActivityGoal } from "@/hooks/useActivityGoal";
 
 interface ParentInfo {
   id: string;
@@ -18,6 +19,7 @@ interface ParentInfo {
 const Profile = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { dailyStepGoal } = useActivityGoal();
   const [parentInfo, setParentInfo] = useState<ParentInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
@@ -271,6 +273,23 @@ const Profile = () => {
                   </motion.div>
                 ))}
               </div>
+
+              {/* Activity Goal */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="mt-4 bg-primary/10 rounded-2xl p-4 flex items-center justify-between neon-border"
+              >
+                <div className="flex items-center gap-3">
+                  <Target className="w-5 h-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Daily Step Goal</p>
+                    <p className="text-xs text-muted-foreground">Set in settings</p>
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-primary">{dailyStepGoal.toLocaleString()}</p>
+              </motion.div>
             </div>
           </motion.div>
         </div>
