@@ -1,14 +1,27 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/BottomNav";
-import { Settings, Edit2, Camera, Star, Flame, Trophy, Target, Zap } from "lucide-react";
+import { Settings, Edit2, Camera, Star, Clock, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+
+interface ParentInfo {
+  id: string;
+  name: string;
+  avatar: string | null;
+}
 
 const Profile = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const [parentInfo, setParentInfo] = useState<ParentInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [requesting, setRequesting] = useState(false);
+  const [pendingRequest, setPendingRequest] = useState(false);
 
   const stats = [
     { label: "Total Steps", value: "124,500", icon: "👟" },
@@ -17,18 +30,107 @@ const Profile = () => {
     { label: "Screen Time", value: "42h", icon: "📱" },
   ];
 
-  const achievements = [
-    { title: "First 10K Steps", date: "Today", icon: "🏃", unlocked: true },
-    { title: "7-Day Streak", date: "Yesterday", icon: "🔥", unlocked: true },
-    { title: "Community Champion", date: "This week", icon: "🏆", unlocked: true },
-    { title: "Speed Demon", date: "Locked", icon: "⚡", unlocked: false },
-    { title: "Explorer", date: "Locked", icon: "🗺️", unlocked: false },
-  ];
-
   const level = 12;
   const xp = 2450;
   const xpToNext = 3000;
   const xpProgress = (xp / xpToNext) * 100;
+
+  useEffect(() => {
+    if (profile?.id) {
+      fetchParentInfo();
+      checkPendingRequest();
+    }
+  }, [profile?.id]);
+
+  const fetchParentInfo = async () => {
+    if (!profile?.id) return;
+
+    try {
+      // Find parent linked to this child
+      const { data: link, error: linkError } = await supabase
+        .from("parent_child_links")
+        .select("parent_id")
+        .eq("child_id", profile.id)
+        .maybeSingle();
+
+      if (linkError) {
+        console.error("Error fetching parent link:", linkError);
+        setLoading(false);
+        return;
+      }
+
+      if (!link) {
+        setLoading(false);
+        return;
+      }
+
+      // Fetch parent profile
+      const { data: parentProfile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .eq("id", link.parent_id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("Error fetching parent profile:", profileError);
+        setLoading(false);
+        return;
+      }
+
+      if (parentProfile) {
+        setParentInfo({
+          id: parentProfile.id,
+          name: parentProfile.display_name,
+          avatar: parentProfile.avatar_url,
+        });
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkPendingRequest = async () => {
+    if (!profile?.id) return;
+
+    const { data } = await supabase
+      .from("screen_time_requests")
+      .select("id")
+      .eq("child_id", profile.id)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    setPendingRequest(!!data);
+  };
+
+  const handleAskForTime = async () => {
+    if (!profile?.id || !parentInfo?.id) return;
+
+    setRequesting(true);
+    try {
+      const { error } = await supabase
+        .from("screen_time_requests")
+        .insert({
+          child_id: profile.id,
+          parent_id: parentInfo.id,
+          requested_minutes: 15,
+          status: "pending",
+        });
+
+      if (error) throw error;
+
+      toast.success("Request sent!", {
+        description: "Your parent will see your request for 15 minutes.",
+      });
+      setPendingRequest(true);
+    } catch (error) {
+      console.error("Error sending request:", error);
+      toast.error("Failed to send request");
+    } finally {
+      setRequesting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -144,44 +246,70 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Achievements Section */}
+      {/* Parent Account Section */}
       <div className="px-6 mt-8">
         <div className="flex items-center gap-2 mb-4">
-          <Trophy className="w-5 h-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold text-foreground">Achievements</h2>
+          <Users className="w-5 h-5 text-primary" />
+          <h2 className="font-display text-lg font-semibold text-foreground">My Parent</h2>
         </div>
-        <div className="space-y-3">
-          {achievements.map((achievement, index) => (
-            <motion.div
-              key={achievement.title}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + index * 0.1 }}
-              whileHover={{ x: 5 }}
-              className={`bg-card rounded-2xl p-4 flex items-center gap-4 neon-border cursor-pointer ${!achievement.unlocked ? "opacity-50" : ""}`}
-            >
-              <motion.div
-                className={`w-12 h-12 rounded-xl ${achievement.unlocked ? "gradient-activity shadow-glow-primary" : "bg-muted"} flex items-center justify-center text-2xl`}
-                whileHover={achievement.unlocked ? { rotate: [0, -10, 10, 0] } : {}}
-              >
-                {achievement.icon}
-              </motion.div>
-              <div className="flex-1">
-                <p className="font-medium text-foreground">{achievement.title}</p>
-                <p className="text-sm text-muted-foreground">{achievement.date}</p>
-              </div>
-              {achievement.unlocked && (
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : !parentInfo ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-8 bg-card rounded-2xl border border-border/50"
+          >
+            <Users className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+            <h3 className="font-display font-bold text-foreground mb-2">No parent linked</h3>
+            <p className="text-sm text-muted-foreground">Ask your parent to link your account</p>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl p-5 shadow-card neon-border"
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="relative">
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5 + index * 0.1, type: "spring" }}
+                  className="w-14 h-14 rounded-full gradient-hero flex items-center justify-center text-xl font-bold text-primary-foreground"
+                  whileHover={{ scale: 1.05 }}
                 >
-                  <Zap className="w-5 h-5 text-primary" />
+                  {parentInfo.name.charAt(0).toUpperCase()}
                 </motion.div>
-              )}
-            </motion.div>
-          ))}
-        </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display font-bold text-lg text-foreground">{parentInfo.name}</h3>
+                <p className="text-sm text-muted-foreground">Parent Account</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                className="flex-1 gradient-activity hover:opacity-90"
+                onClick={handleAskForTime}
+                disabled={requesting || pendingRequest}
+              >
+                {requesting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Clock className="w-4 h-4 mr-2" />
+                )}
+                {pendingRequest ? "Request Pending" : "Ask for Screen Time"}
+              </Button>
+            </div>
+
+            {pendingRequest && (
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                You have a pending request. Wait for your parent to respond.
+              </p>
+            )}
+          </motion.div>
+        )}
       </div>
 
       <BottomNav />

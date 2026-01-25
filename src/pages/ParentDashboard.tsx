@@ -11,7 +11,9 @@ import {
   Users,
   Clock,
   Activity,
-  Loader2
+  Loader2,
+  Check,
+  X
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -27,15 +29,26 @@ interface LinkedChild {
   isLocked: boolean;
 }
 
+interface ScreenTimeRequest {
+  id: string;
+  childId: string;
+  childName: string;
+  requestedMinutes: number;
+  createdAt: string;
+}
+
 export default function ParentDashboard() {
   const [children, setChildren] = useState<LinkedChild[]>([]);
+  const [requests, setRequests] = useState<ScreenTimeRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (profile?.id) {
       fetchLinkedChildren();
+      fetchPendingRequests();
     }
   }, [profile?.id]);
 
@@ -43,7 +56,6 @@ export default function ParentDashboard() {
     if (!profile?.id) return;
 
     try {
-      // Fetch parent-child links
       const { data: links, error: linksError } = await supabase
         .from("parent_child_links")
         .select("child_id")
@@ -62,7 +74,6 @@ export default function ParentDashboard() {
 
       const childIds = links.map(link => link.child_id);
 
-      // Fetch child profiles
       const { data: childProfiles, error: profilesError } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url")
@@ -73,35 +84,23 @@ export default function ParentDashboard() {
         return;
       }
 
-      // Fetch screen time balances
-      const { data: balances, error: balancesError } = await supabase
+      const { data: balances } = await supabase
         .from("screen_time_balance")
         .select("user_id, minutes_remaining")
         .in("user_id", childIds);
 
-      if (balancesError) {
-        console.error("Error fetching balances:", balancesError);
-      }
-
-      // Fetch today's activity
       const today = new Date().toISOString().split("T")[0];
-      const { data: activities, error: activitiesError } = await supabase
+      const { data: activities } = await supabase
         .from("activity_logs")
         .select("user_id, distance_meters")
         .in("user_id", childIds)
         .eq("logged_at", today);
 
-      if (activitiesError) {
-        console.error("Error fetching activities:", activitiesError);
-      }
-
-      // Build child data
       const linkedChildren: LinkedChild[] = (childProfiles || []).map(child => {
         const balance = balances?.find(b => b.user_id === child.id);
         const activity = activities?.find(a => a.user_id === child.id);
         const screenTime = balance?.minutes_remaining || 0;
         const distance = activity?.distance_meters || 0;
-        // Activity progress as percentage of daily goal (e.g., 5km = 5000m)
         const activityProgress = Math.min(100, Math.round((distance / 5000) * 100));
 
         return {
@@ -119,6 +118,111 @@ export default function ParentDashboard() {
       console.error("Error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingRequests = async () => {
+    if (!profile?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("screen_time_requests")
+        .select("id, child_id, requested_minutes, created_at")
+        .eq("parent_id", profile.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching requests:", error);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setRequests([]);
+        return;
+      }
+
+      const childIds = data.map(r => r.child_id);
+      const { data: childProfiles } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", childIds);
+
+      const formattedRequests: ScreenTimeRequest[] = data.map(req => {
+        const child = childProfiles?.find(p => p.id === req.child_id);
+        return {
+          id: req.id,
+          childId: req.child_id,
+          childName: child?.display_name || "Unknown",
+          requestedMinutes: req.requested_minutes,
+          createdAt: req.created_at,
+        };
+      });
+
+      setRequests(formattedRequests);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
+  const handleAcceptRequest = async (request: ScreenTimeRequest) => {
+    setProcessingRequest(request.id);
+    try {
+      // Update request status
+      const { error: updateError } = await supabase
+        .from("screen_time_requests")
+        .update({ status: "accepted", responded_at: new Date().toISOString() })
+        .eq("id", request.id);
+
+      if (updateError) throw updateError;
+
+      // Grant screen time
+      const { data: balance } = await supabase
+        .from("screen_time_balance")
+        .select("minutes_remaining")
+        .eq("user_id", request.childId)
+        .maybeSingle();
+
+      const currentMinutes = balance?.minutes_remaining || 0;
+
+      const { error: balanceError } = await supabase
+        .from("screen_time_balance")
+        .upsert({
+          user_id: request.childId,
+          minutes_remaining: currentMinutes + request.requestedMinutes,
+          last_updated: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+
+      if (balanceError) throw balanceError;
+
+      toast.success(`Approved ${request.requestedMinutes} minutes for ${request.childName}!`);
+      setRequests(prev => prev.filter(r => r.id !== request.id));
+      fetchLinkedChildren();
+    } catch (error) {
+      console.error("Error accepting request:", error);
+      toast.error("Failed to approve request");
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  const handleDeclineRequest = async (request: ScreenTimeRequest) => {
+    setProcessingRequest(request.id);
+    try {
+      const { error } = await supabase
+        .from("screen_time_requests")
+        .update({ status: "declined", responded_at: new Date().toISOString() })
+        .eq("id", request.id);
+
+      if (error) throw error;
+
+      toast.info(`Declined request from ${request.childName}`);
+      setRequests(prev => prev.filter(r => r.id !== request.id));
+    } catch (error) {
+      console.error("Error declining request:", error);
+      toast.error("Failed to decline request");
+    } finally {
+      setProcessingRequest(null);
     }
   };
 
@@ -179,9 +283,16 @@ export default function ParentDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
-              <Bell className="w-5 h-5" />
-            </Button>
+            <div className="relative">
+              <Button variant="ghost" size="icon">
+                <Bell className="w-5 h-5" />
+              </Button>
+              {requests.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
+                  {requests.length}
+                </span>
+              )}
+            </div>
             <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
               <Settings className="w-5 h-5" />
             </Button>
@@ -271,7 +382,7 @@ export default function ParentDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-card rounded-2xl p-6 shadow-card border border-border/50"
+          className="bg-card rounded-2xl p-6 shadow-card border border-border/50 mb-8"
         >
           <h3 className="font-display font-bold text-lg text-foreground mb-4">Quick Actions</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -292,6 +403,80 @@ export default function ParentDashboard() {
               <span className="text-xs">Settings</span>
             </Button>
           </div>
+        </motion.div>
+
+        {/* Pending Screen Time Requests */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-card rounded-2xl p-6 shadow-card border border-border/50"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-primary" />
+            <h3 className="font-display font-bold text-lg text-foreground">Pending Screen Time Requests</h3>
+            {requests.length > 0 && (
+              <span className="ml-auto bg-primary/20 text-primary text-xs font-bold px-2 py-1 rounded-full">
+                {requests.length} pending
+              </span>
+            )}
+          </div>
+
+          {requests.length === 0 ? (
+            <div className="text-center py-8">
+              <Clock className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground">No pending requests</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {requests.map((request, index) => (
+                <motion.div
+                  key={request.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-center gap-4 p-4 bg-muted/30 rounded-xl border border-border/50"
+                >
+                  <div className="w-10 h-10 rounded-full gradient-activity flex items-center justify-center text-lg font-bold text-primary-foreground">
+                    {request.childName.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{request.childName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Requesting {request.requestedMinutes} minutes
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDeclineRequest(request)}
+                      disabled={processingRequest === request.id}
+                    >
+                      {processingRequest === request.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <X className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="gradient-activity"
+                      onClick={() => handleAcceptRequest(request)}
+                      disabled={processingRequest === request.id}
+                    >
+                      {processingRequest === request.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </main>
     </div>
