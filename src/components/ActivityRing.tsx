@@ -1,17 +1,20 @@
 import { motion } from "framer-motion";
+import { ReactNode } from "react";
 
 interface ActivityRingProps {
   progress: number;
   size?: number;
   strokeWidth?: number;
   className?: string;
+  children?: ReactNode;
 }
 
 export const ActivityRing = ({ 
   progress, 
   size = 200, 
   strokeWidth = 12,
-  className = ""
+  className = "",
+  children
 }: ActivityRingProps) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -56,15 +59,21 @@ export const ActivityRing = ({
       
       {/* Center content */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span 
-          className="text-4xl font-display font-bold text-foreground"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.5, type: "spring" }}
-        >
-          {Math.round(progress)}%
-        </motion.span>
-        <span className="text-sm text-muted-foreground">Activity</span>
+        {children ? (
+          children
+        ) : (
+          <>
+            <motion.span 
+              className="text-4xl font-display font-bold text-foreground"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.5, type: "spring" }}
+            >
+              {Math.round(progress)}%
+            </motion.span>
+            <span className="text-sm text-muted-foreground">Activity</span>
+          </>
+        )}
       </div>
     </div>
   );
