@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Users, User, Trophy, ChevronRight, Footprints, Zap, MapPin, Star, Timer, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import logo from "@/assets/logo-white.png";
+import logo from "@/assets/logo.png";
 
 interface Challenge {
   id: string;
@@ -117,14 +117,14 @@ const Challenges = () => {
           animate={{ x: [0, 30, 0] }}
           transition={{ duration: 10, repeat: Infinity }}
         />
-        
+
         <div className="px-6 pt-12">
           <div className="flex items-center justify-between mb-6">
             <Link to="/child" className="hover:opacity-80 transition-opacity">
-              <motion.img 
-                src={logo} 
-                alt="GameRun" 
-                className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]" 
+              <motion.img
+                src={logo}
+                alt="GameRun"
+                className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]"
                 whileHover={{ scale: 1.1 }}
               />
             </Link>
@@ -135,11 +135,17 @@ const Challenges = () => {
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2 w-full bg-card neon-border">
-              <TabsTrigger value="community" className="gap-2 data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary">
+              <TabsTrigger
+                value="community"
+                className="gap-2 data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary"
+              >
                 <Users className="w-4 h-4" />
                 Community
               </TabsTrigger>
-              <TabsTrigger value="personal" className="gap-2 data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary">
+              <TabsTrigger
+                value="personal"
+                className="gap-2 data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary"
+              >
                 <User className="w-4 h-4" />
                 Personal
               </TabsTrigger>
@@ -155,7 +161,7 @@ const Challenges = () => {
                 >
                   {/* Featured Community Challenge */}
                   {communityChallenges[0] && (
-                    <motion.div 
+                    <motion.div
                       className="relative rounded-3xl overflow-hidden neon-border"
                       whileHover={{ scale: 1.02 }}
                     >
@@ -168,17 +174,21 @@ const Challenges = () => {
                       <div className="relative p-6">
                         <div className="flex items-center gap-2 mb-3">
                           <Sparkles className="w-5 h-5 text-primary-foreground" />
-                          <span className="text-xs font-semibold text-primary-foreground/80 uppercase tracking-wide">Featured Challenge</span>
+                          <span className="text-xs font-semibold text-primary-foreground/80 uppercase tracking-wide">
+                            Featured Challenge
+                          </span>
                         </div>
                         <h3 className="font-display text-xl font-bold text-primary-foreground mb-2">
                           {communityChallenges[0].title}
                         </h3>
                         <p className="text-primary-foreground/70 text-sm mb-4">{communityChallenges[0].description}</p>
-                        
+
                         <div className="flex items-center gap-6 mb-4">
                           <div className="text-primary-foreground/80">
                             <p className="text-xs opacity-70">Group Goal</p>
-                            <p className="font-bold">{communityChallenges[0].target} {communityChallenges[0].unit}</p>
+                            <p className="font-bold">
+                              {communityChallenges[0].target} {communityChallenges[0].unit}
+                            </p>
                           </div>
                           <div className="text-primary-foreground/80">
                             <p className="text-xs opacity-70">Members</p>
@@ -192,20 +202,21 @@ const Challenges = () => {
                             </p>
                           </div>
                         </div>
-                        
+
                         <Progress
                           value={(communityChallenges[0].progress / communityChallenges[0].target) * 100}
                           className="h-3 bg-primary-foreground/20"
                         />
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-primary-foreground/70">
-                            {communityChallenges[0].progress} / {communityChallenges[0].target} {communityChallenges[0].unit}
+                            {communityChallenges[0].progress} / {communityChallenges[0].target}{" "}
+                            {communityChallenges[0].unit}
                           </span>
                           <span className="text-xs text-primary-foreground/70">
                             {Math.round((communityChallenges[0].progress / communityChallenges[0].target) * 100)}%
                           </span>
                         </div>
-                        
+
                         <Button className="mt-4 bg-white/20 hover:bg-white/30 text-primary-foreground border border-white/30">
                           <Star className="w-4 h-4 mr-2" />
                           Join Challenge
@@ -236,7 +247,7 @@ const Challenges = () => {
                           whileHover={{ x: 5 }}
                           className="bg-card rounded-2xl p-4 flex items-center gap-4 neon-border cursor-pointer"
                         >
-                          <motion.div 
+                          <motion.div
                             className="w-12 h-12 rounded-xl gradient-activity flex items-center justify-center shadow-glow-primary"
                             whileHover={{ rotate: 10 }}
                           >
@@ -248,8 +259,7 @@ const Challenges = () => {
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-primary flex items-center gap-1">
-                              <Timer className="w-3 h-3" />
-                              +{challenge.reward}m
+                              <Timer className="w-3 h-3" />+{challenge.reward}m
                             </p>
                           </div>
                         </motion.div>
@@ -285,7 +295,7 @@ const Challenges = () => {
                             className="bg-card rounded-2xl p-4 neon-border cursor-pointer"
                           >
                             <div className="flex items-center gap-3">
-                              <motion.div 
+                              <motion.div
                                 className="w-10 h-10 rounded-xl gradient-activity flex items-center justify-center text-primary-foreground shadow-glow-primary"
                                 whileHover={{ rotate: 10 }}
                               >
@@ -294,12 +304,12 @@ const Challenges = () => {
                               <div className="flex-1">
                                 <p className="font-medium text-foreground text-sm">{challenge.title}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {challenge.progress.toLocaleString()} / {challenge.target.toLocaleString()} {challenge.unit}
+                                  {challenge.progress.toLocaleString()} / {challenge.target.toLocaleString()}{" "}
+                                  {challenge.unit}
                                 </p>
                               </div>
                               <span className="text-sm font-bold text-primary flex items-center gap-1">
-                                <Timer className="w-3 h-3" />
-                                +{challenge.reward}m
+                                <Timer className="w-3 h-3" />+{challenge.reward}m
                               </span>
                             </div>
                             <div className="mt-3 relative">
