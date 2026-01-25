@@ -112,6 +112,10 @@ export default function Pass() {
     };
   }, [isActive, session]);
 
+  const handleGoToActive = () => {
+    setView("active");
+  };
+
   const handleStart = useCallback(async () => {
     if (!hasPermission) {
       const granted = await healthKitService.requestAuthorization();
@@ -130,7 +134,6 @@ export default function Pass() {
     setCurrentDistance(data.distance);
     setElapsedSeconds(0);
     setIsActive(true);
-    setView("active");
     toast.success("Pass started! Get moving!");
   }, [hasPermission]);
 
@@ -204,10 +207,12 @@ export default function Pass() {
       }
 
       setScreenTimeBalance(newBalance);
-      toast.success(`Pass complete! Earned ${finalEarnedMinutes} minutes`);
+      toast.success(`Pass complete! Earned ${finalEarnedMinutes} minutes`, {
+        description: "View your updated balance in Screentime",
+      });
       setSession(null);
       setElapsedSeconds(0);
-      setView("home");
+      setView("screentime"); // Go to screentime to show updated balance
       
       // Refresh history
       const { data: historyData } = await supabase
@@ -445,7 +450,7 @@ export default function Pass() {
           <motion.button
             whileHover={{ scale: 1.03, y: -2 }}
             whileTap={{ scale: 0.98 }}
-            onClick={handleStart}
+            onClick={handleGoToActive}
             className="p-6 rounded-2xl bg-card neon-border text-left relative overflow-hidden group"
           >
             <motion.div 
