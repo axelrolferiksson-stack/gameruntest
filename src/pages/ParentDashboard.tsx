@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChildCard } from "@/components/ChildCard";
 import { 
-  ArrowLeft, 
+  LogOut, 
   Plus, 
   Bell, 
   Settings,
@@ -12,8 +12,9 @@ import {
   Clock,
   Activity
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const mockChildren = [
   {
@@ -43,11 +44,18 @@ const stats = [
 
 export default function ParentDashboard() {
   const [children] = useState(mockChildren);
+  const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleGrantTime = (childName: string) => {
     toast.success(`Granted 15 minutes to ${childName}!`, {
       description: "Screen time has been added to their account.",
     });
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
   };
 
   return (
@@ -56,13 +64,10 @@ export default function ParentDashboard() {
       <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
             <div>
-              <h1 className="font-display font-bold text-xl text-foreground">Parent Dashboard</h1>
+              <h1 className="font-display font-bold text-xl text-foreground">
+                Welcome, {profile?.display_name || 'Parent'}
+              </h1>
               <p className="text-sm text-muted-foreground">Manage your children's screen time</p>
             </div>
           </div>
@@ -72,6 +77,9 @@ export default function ParentDashboard() {
             </Button>
             <Button variant="ghost" size="icon">
               <Settings className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleSignOut}>
+              <LogOut className="w-5 h-5" />
             </Button>
           </div>
         </div>
