@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import Challenges from "./pages/Challenges";
 import Friends from "./pages/Friends";
 import Stats from "./pages/Stats";
+import AddChild from "./pages/AddChild";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +100,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="parent">
             <ParentDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/parent/add-child" 
+        element={
+          <ProtectedRoute allowedRole="parent">
+            <AddChild />
           </ProtectedRoute>
         } 
       />

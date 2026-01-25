@@ -111,8 +111,8 @@ export default function ParentDashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display font-bold text-2xl text-foreground">Your Children</h2>
-            <Button variant="outline" size="sm">
-              <Plus className="w-4 h-4" />
+            <Button variant="outline" size="sm" onClick={() => navigate("/parent/add-child")}>
+              <Plus className="w-4 h-4 mr-1" />
               Add Child
             </Button>
           </div>
