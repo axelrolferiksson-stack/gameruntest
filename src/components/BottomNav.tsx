@@ -5,10 +5,8 @@ import { motion } from "framer-motion";
 
 const navItems = [
   { to: "/child", icon: Home, label: "Home" },
-  { to: "/stats", icon: BarChart3, label: "Stats" },
   { to: "/challenges", icon: Trophy, label: "Challenges" },
   { to: "/profile", icon: User, label: "Profile" },
-  { to: "/friends", icon: Users, label: "Friends" },
 ];
 
 export const BottomNav = () => {

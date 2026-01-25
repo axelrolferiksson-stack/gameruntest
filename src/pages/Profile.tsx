@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/BottomNav";
-import { Settings, Edit2, Camera, Star, Clock, Users, Loader2, Minus, Plus, Target } from "lucide-react";
+import { Settings, Edit2, Camera, Star, Clock, Users, Loader2, Minus, Plus, Target, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -295,8 +295,30 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Parent Account Section */}
+      {/* Friends Link */}
       <div className="px-6 mt-8">
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          onClick={() => navigate("/friends")}
+          className="w-full bg-card rounded-2xl p-4 neon-border flex items-center justify-between group hover:bg-muted/30 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl gradient-activity flex items-center justify-center">
+              <Users className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div className="text-left">
+              <p className="font-semibold text-foreground">Friends</p>
+              <p className="text-xs text-muted-foreground">View and manage your friends</p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+        </motion.button>
+      </div>
+
+      {/* Parent Account Section */}
+      <div className="px-6 mt-4">
         <div className="flex items-center gap-2 mb-4">
           <Users className="w-5 h-5 text-primary" />
           <h2 className="font-display text-lg font-semibold text-foreground">My Parent</h2>
