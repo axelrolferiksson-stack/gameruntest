@@ -11,7 +11,8 @@ import {
   Bike,
   Trophy,
   Sparkles,
-  Bell
+  Bell,
+  Settings
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -114,8 +115,8 @@ export default function ChildDashboard() {
       {/* Header */}
       <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={handleEnableNotifications}>
-            <Bell className={`w-5 h-5 ${notificationsEnabled ? 'text-primary' : ''}`} />
+          <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
+            <Settings className="w-5 h-5" />
           </Button>
           <div className="font-display font-bold text-xl text-foreground">
             Game<span className="text-primary">Run</span>

@@ -10,6 +10,7 @@ import ChildDashboard from "./pages/ChildDashboard";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import Pass from "./pages/Pass";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="child">
             <Pass />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/settings" 
+        element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         } 
       />
