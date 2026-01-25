@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ArrowLeft, Play, Square, MapPin, Clock, Tv, AlertTriangle, Timer, ChevronRight, History, Settings, Info } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -35,6 +37,7 @@ export default function Pass() {
   const [saving, setSaving] = useState(false);
   const [screenTimeBalance, setScreenTimeBalance] = useState(0);
   const [passHistory, setPassHistory] = useState<ActivityLog[]>([]);
+  const [customScreenTime, setCustomScreenTime] = useState("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const distanceRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -383,28 +386,52 @@ export default function Pass() {
             </div>
           </motion.div>
 
-          {/* Quick Use Options */}
+          {/* Custom Use Amount */}
           <div className="mb-6">
             <h3 className="font-display font-semibold text-lg text-foreground mb-3">Use Screen Time</h3>
-            <div className="grid grid-cols-3 gap-3">
-              {[15, 30, 60].map((mins) => (
-                <motion.button
-                  key={mins}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  disabled={screenTimeBalance < mins}
-                  onClick={() => toast.info(`Activated ${mins} minutes of screen time`)}
-                  className={`p-4 rounded-2xl text-center neon-border transition-all ${
-                    screenTimeBalance >= mins 
-                      ? "bg-card hover:bg-primary/10" 
-                      : "bg-card/50 opacity-50 cursor-not-allowed"
-                  }`}
-                >
-                  <p className="font-display font-bold text-xl text-primary">{mins}</p>
-                  <p className="text-xs text-muted-foreground">minutes</p>
-                </motion.button>
-              ))}
-            </div>
+            <Card className="neon-border">
+              <CardContent className="p-4">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="screentime-amount" className="text-muted-foreground text-sm mb-2 block">
+                      Enter minutes to use
+                    </Label>
+                    <div className="flex gap-3">
+                      <Input
+                        id="screentime-amount"
+                        type="number"
+                        min={1}
+                        max={screenTimeBalance}
+                        placeholder="e.g. 30"
+                        value={customScreenTime}
+                        onChange={(e) => setCustomScreenTime(e.target.value)}
+                        className="flex-1 bg-background/50 border-border/50 text-foreground text-lg font-display"
+                      />
+                      <span className="flex items-center text-muted-foreground">min</span>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full gradient-hero text-primary-foreground font-semibold"
+                    disabled={!customScreenTime || parseInt(customScreenTime) < 1 || parseInt(customScreenTime) > screenTimeBalance}
+                    onClick={() => {
+                      const mins = parseInt(customScreenTime);
+                      if (mins > 0 && mins <= screenTimeBalance) {
+                        toast.success(`Activated ${mins} minutes of screen time`);
+                        setScreenTimeBalance((prev) => prev - mins);
+                        setCustomScreenTime("");
+                      }
+                    }}
+                  >
+                    Activate Screen Time
+                  </Button>
+                  {screenTimeBalance === 0 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      No balance available. Start a Pass to earn more!
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </main>
 
