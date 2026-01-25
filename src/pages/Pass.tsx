@@ -59,10 +59,11 @@ export default function Pass() {
 
   // Poll distance updates
   useEffect(() => {
-    if (isActive) {
+    if (isActive && session) {
       const updateDistance = async () => {
-        const data = await healthKitService.getTodayData();
-        setCurrentDistance(data.distance);
+        // Use getDistanceSince for more accurate tracking during session
+        const distance = await healthKitService.getDistanceSince(session.startTime);
+        setCurrentDistance(session.startDistance + distance);
       };
       updateDistance();
       distanceRef.current = setInterval(updateDistance, 3000); // Update every 3s
@@ -70,7 +71,7 @@ export default function Pass() {
     return () => {
       if (distanceRef.current) clearInterval(distanceRef.current);
     };
-  }, [isActive]);
+  }, [isActive, session]);
 
   const handleStart = useCallback(async () => {
     if (!hasPermission) {
