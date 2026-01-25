@@ -3,9 +3,22 @@ import { motion } from "framer-motion";
 import { BottomNav } from "@/components/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, UserPlus, Phone, BarChart3, MapPin, User, Copy, Check, Share2, MessageCircle, Trophy, Zap } from "lucide-react";
+import {
+  Search,
+  UserPlus,
+  Phone,
+  BarChart3,
+  MapPin,
+  User,
+  Copy,
+  Check,
+  Share2,
+  MessageCircle,
+  Trophy,
+  Zap,
+} from "lucide-react";
 import { Link } from "react-router-dom";
-import logo from "@/assets/logo-white.png";
+import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
@@ -31,7 +44,7 @@ const Friends = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const shareLink = `gamerun.in/i/${profile?.display_name?.toLowerCase().replace(/\s/g, '') || "user"}`;
+  const shareLink = `gamerun.in/i/${profile?.display_name?.toLowerCase().replace(/\s/g, "") || "user"}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareLink);
@@ -40,17 +53,22 @@ const Friends = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const filteredFriends = friends.filter((friend) =>
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    friend.username.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFriends = friends.filter(
+    (friend) =>
+      friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      friend.username.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const getRankEmoji = (rank: number) => {
     switch (rank) {
-      case 1: return "🥇";
-      case 2: return "🥈";
-      case 3: return "🥉";
-      default: return `#${rank}`;
+      case 1:
+        return "🥇";
+      case 2:
+        return "🥈";
+      case 3:
+        return "🥉";
+      default:
+        return `#${rank}`;
     }
   };
 
@@ -63,14 +81,14 @@ const Friends = () => {
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 6, repeat: Infinity }}
         />
-        
+
         <div className="px-6 pt-12">
           <div className="flex items-center justify-between mb-6">
             <Link to="/child" className="hover:opacity-80 transition-opacity">
-              <motion.img 
-                src={logo} 
-                alt="GameRun" 
-                className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]" 
+              <motion.img
+                src={logo}
+                alt="GameRun"
+                className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]"
                 whileHover={{ scale: 1.1 }}
               />
             </Link>
@@ -83,11 +101,7 @@ const Friends = () => {
           </div>
 
           {/* Search */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
@@ -124,10 +138,12 @@ const Friends = () => {
                   whileHover={{ scale: 1.1, y: -3 }}
                   whileTap={{ scale: 0.95 }}
                   className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                    item.gradient ? 'gradient-activity shadow-glow-primary' : 'bg-card neon-border'
+                    item.gradient ? "gradient-activity shadow-glow-primary" : "bg-card neon-border"
                   }`}
                 >
-                  <item.icon className={`w-6 h-6 ${item.gradient ? 'text-primary-foreground' : 'text-muted-foreground'}`} />
+                  <item.icon
+                    className={`w-6 h-6 ${item.gradient ? "text-primary-foreground" : "text-muted-foreground"}`}
+                  />
                 </motion.button>
               ))}
             </div>
@@ -142,7 +158,7 @@ const Friends = () => {
           >
             <h2 className="font-display font-semibold text-foreground mb-2">Your Invite Link</h2>
             <p className="text-sm text-muted-foreground mb-4">Share and earn bonus screen time when friends join! 🎁</p>
-            
+
             <div className="flex items-center gap-2 bg-muted/50 rounded-xl p-3 neon-border">
               <span className="flex-1 text-sm text-muted-foreground truncate font-mono">{shareLink}</span>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -150,7 +166,7 @@ const Friends = () => {
                   variant="secondary"
                   size="sm"
                   onClick={handleCopy}
-                  className={`shrink-0 ${copied ? 'bg-green-500/20 text-green-400' : 'gradient-activity text-primary-foreground'}`}
+                  className={`shrink-0 ${copied ? "bg-green-500/20 text-green-400" : "gradient-activity text-primary-foreground"}`}
                 >
                   {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
                   {copied ? "Copied!" : "Copy"}
@@ -179,35 +195,37 @@ const Friends = () => {
                   transition={{ delay: 0.3 + index * 0.1 }}
                   whileHover={{ x: 5, scale: 1.01 }}
                   className={`bg-card rounded-2xl p-4 flex items-center gap-4 neon-border cursor-pointer ${
-                    friend.rank === 1 ? 'ring-2 ring-primary/30' : ''
+                    friend.rank === 1 ? "ring-2 ring-primary/30" : ""
                   }`}
                 >
                   {/* Rank */}
                   <div className="w-8 text-center">
                     <span className="text-lg">{getRankEmoji(friend.rank)}</span>
                   </div>
-                  
+
                   {/* Avatar */}
                   <div className="relative">
-                    <motion.div 
+                    <motion.div
                       className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-primary-foreground ${
-                        friend.rank === 1 ? 'gradient-hero shadow-glow-primary' : 'gradient-activity'
+                        friend.rank === 1 ? "gradient-hero shadow-glow-primary" : "gradient-activity"
                       }`}
                       whileHover={{ scale: 1.1 }}
                     >
                       {friend.avatar}
                     </motion.div>
-                    <div className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card ${
-                      friend.status === "online" ? "bg-green-500" : "bg-muted-foreground"
-                    }`} />
+                    <div
+                      className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-card ${
+                        friend.status === "online" ? "bg-green-500" : "bg-muted-foreground"
+                      }`}
+                    />
                   </div>
-                  
+
                   {/* Info */}
                   <div className="flex-1">
                     <p className="font-medium text-foreground">{friend.name}</p>
                     <p className="text-sm text-muted-foreground">@{friend.username}</p>
                   </div>
-                  
+
                   {/* Steps */}
                   <div className="text-right">
                     <p className="font-bold text-primary flex items-center gap-1">
@@ -219,13 +237,9 @@ const Friends = () => {
                 </motion.div>
               ))}
             </div>
-            
+
             {filteredFriends.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-8"
-              >
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-8">
                 <p className="text-muted-foreground">No friends found 🔍</p>
                 <p className="text-sm text-muted-foreground mt-1">Try a different search</p>
               </motion.div>
