@@ -20,7 +20,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get the parent's auth token from the request
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -33,50 +32,58 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Create client with parent's token to get their profile
+    // Admin client for bypassing RLS
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Client with parent's token
     const supabaseParent = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Verify parent is authenticated and get their profile
+    // Verify parent authentication
     const { data: { user: parentUser }, error: parentAuthError } = await supabaseParent.auth.getUser();
     if (parentAuthError || !parentUser) {
+      console.error("Parent auth error:", parentAuthError);
       return new Response(
         JSON.stringify({ error: "Parent authentication failed" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { data: parentProfile, error: parentProfileError } = await supabaseParent
+    // Get parent profile using admin client
+    const { data: parentProfile, error: parentProfileError } = await supabaseAdmin
       .from("profiles")
       .select("id, role")
       .eq("user_id", parentUser.id)
       .single();
 
     if (parentProfileError || !parentProfile || parentProfile.role !== "parent") {
+      console.error("Parent profile error:", parentProfileError);
       return new Response(
         JSON.stringify({ error: "Only parents can add children" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create admin client to verify child credentials
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Try to sign in the child to verify credentials
-    const { data: childAuth, error: childAuthError } = await supabaseAdmin.auth.signInWithPassword({
+    // Verify child credentials using a separate client to avoid session issues
+    const supabaseAuthCheck = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: childAuth, error: childAuthError } = await supabaseAuthCheck.auth.signInWithPassword({
       email: childEmail,
       password: childPassword,
     });
 
     if (childAuthError || !childAuth.user) {
+      console.error("Child auth error:", childAuthError);
       return new Response(
         JSON.stringify({ error: "Invalid child credentials" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get the child's profile and verify they are a child
+    // Sign out the child session immediately
+    await supabaseAuthCheck.auth.signOut();
+
+    // Get child profile using admin client
     const { data: childProfile, error: childProfileError } = await supabaseAdmin
       .from("profiles")
       .select("id, role, display_name")
@@ -84,6 +91,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (childProfileError || !childProfile) {
+      console.error("Child profile error:", childProfileError);
       return new Response(
         JSON.stringify({ error: "Child profile not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -97,7 +105,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if link already exists
+    // Check for existing link using admin client
     const { data: existingLink } = await supabaseAdmin
       .from("parent_child_links")
       .select("id")
@@ -112,7 +120,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create the parent-child link
+    // Create link using admin client to bypass RLS
     const { error: linkError } = await supabaseAdmin
       .from("parent_child_links")
       .insert({
@@ -127,6 +135,8 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`Successfully linked child ${childProfile.display_name} to parent ${parentProfile.id}`);
 
     return new Response(
       JSON.stringify({ 
