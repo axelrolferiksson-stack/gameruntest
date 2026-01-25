@@ -141,19 +141,44 @@ export default function Pass() {
 
     const finalDistance = distanceTraveled;
     const finalEarnedMinutes = Math.floor(finalDistance / 100);
+    const today = new Date().toISOString().split("T")[0];
 
     try {
-      const { error: logError } = await supabase.from("activity_logs").insert({
-        user_id: profile.id,
-        steps: 0,
-        distance_meters: finalDistance,
-        active_minutes: Math.floor(elapsedSeconds / 60),
-        screen_time_earned: finalEarnedMinutes,
-        logged_at: new Date().toISOString().split("T")[0],
-      });
+      // Check if there's already an activity log for today
+      const { data: existingLog } = await supabase
+        .from("activity_logs")
+        .select("*")
+        .eq("user_id", profile.id)
+        .eq("logged_at", today)
+        .maybeSingle();
 
-      if (logError) throw logError;
+      if (existingLog) {
+        // Update existing log by adding to it
+        const { error: updateError } = await supabase
+          .from("activity_logs")
+          .update({
+            distance_meters: existingLog.distance_meters + finalDistance,
+            active_minutes: existingLog.active_minutes + Math.floor(elapsedSeconds / 60),
+            screen_time_earned: existingLog.screen_time_earned + finalEarnedMinutes,
+          })
+          .eq("id", existingLog.id);
 
+        if (updateError) throw updateError;
+      } else {
+        // Insert new log for today
+        const { error: logError } = await supabase.from("activity_logs").insert({
+          user_id: profile.id,
+          steps: 0,
+          distance_meters: finalDistance,
+          active_minutes: Math.floor(elapsedSeconds / 60),
+          screen_time_earned: finalEarnedMinutes,
+          logged_at: today,
+        });
+
+        if (logError) throw logError;
+      }
+
+      // Update screen time balance
       const { data: balanceData } = await supabase
         .from("screen_time_balance")
         .select("*")
