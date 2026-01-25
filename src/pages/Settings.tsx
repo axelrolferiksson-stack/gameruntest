@@ -10,12 +10,14 @@ import {
   Shield, 
   HelpCircle,
   ChevronRight,
-  Activity
+  Activity,
+  LogOut
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { healthKitService } from "@/services/healthKit";
 import { notificationService } from "@/services/notifications";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -49,9 +51,15 @@ function SettingItem({ icon, title, description, action, onClick }: SettingItemP
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [healthKitEnabled, setHealthKitEnabled] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [isHealthKitAvailable] = useState(healthKitService.isAvailable());
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   useEffect(() => {
     // Check if HealthKit was previously authorized
@@ -231,11 +239,28 @@ export default function Settings() {
           </div>
         </motion.div>
 
+        {/* Logout Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-8"
+        >
+          <Button
+            variant="destructive"
+            className="w-full h-12 font-display font-semibold"
+            onClick={handleSignOut}
+          >
+            <LogOut className="w-5 h-5 mr-2" />
+            Log Out
+          </Button>
+        </motion.div>
+
         {/* App Info */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.5 }}
           className="text-center text-muted-foreground text-sm"
         >
           <p>GameRun v1.0.0</p>
