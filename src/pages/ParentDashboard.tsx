@@ -13,7 +13,8 @@ import {
   Activity,
   Loader2,
   Check,
-  X
+  X,
+  Minus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -42,6 +43,7 @@ export default function ParentDashboard() {
   const [requests, setRequests] = useState<ScreenTimeRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  const [editingMinutes, setEditingMinutes] = useState<Record<string, number>>({});
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -167,6 +169,8 @@ export default function ParentDashboard() {
 
   const handleAcceptRequest = async (request: ScreenTimeRequest) => {
     setProcessingRequest(request.id);
+    const minutesToGrant = editingMinutes[request.id] ?? request.requestedMinutes;
+    
     try {
       // Update request status
       const { error: updateError } = await supabase
@@ -189,14 +193,19 @@ export default function ParentDashboard() {
         .from("screen_time_balance")
         .upsert({
           user_id: request.childId,
-          minutes_remaining: currentMinutes + request.requestedMinutes,
+          minutes_remaining: currentMinutes + minutesToGrant,
           last_updated: new Date().toISOString(),
         }, { onConflict: "user_id" });
 
       if (balanceError) throw balanceError;
 
-      toast.success(`Approved ${request.requestedMinutes} minutes for ${request.childName}!`);
+      toast.success(`Approved ${minutesToGrant} minutes for ${request.childName}!`);
       setRequests(prev => prev.filter(r => r.id !== request.id));
+      setEditingMinutes(prev => {
+        const newState = { ...prev };
+        delete newState[request.id];
+        return newState;
+      });
       fetchLinkedChildren();
     } catch (error) {
       console.error("Error accepting request:", error);
@@ -204,6 +213,12 @@ export default function ParentDashboard() {
     } finally {
       setProcessingRequest(null);
     }
+  };
+
+  const adjustRequestMinutes = (requestId: string, currentMinutes: number, amount: number) => {
+    const current = editingMinutes[requestId] ?? currentMinutes;
+    const newValue = Math.max(5, Math.min(120, current + amount));
+    setEditingMinutes(prev => ({ ...prev, [requestId]: newValue }));
   };
 
   const handleDeclineRequest = async (request: ScreenTimeRequest) => {
@@ -447,53 +462,109 @@ export default function ParentDashboard() {
               <p className="text-muted-foreground">No pending requests</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {requests.map((request, index) => (
-                <motion.div
-                  key={request.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="flex items-center gap-4 p-4 bg-muted/30 rounded-xl border border-border/50"
-                >
-                  <div className="w-10 h-10 rounded-full gradient-activity flex items-center justify-center text-lg font-bold text-primary-foreground">
-                    {request.childName.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">{request.childName}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Requesting {request.requestedMinutes} minutes
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDeclineRequest(request)}
-                      disabled={processingRequest === request.id}
-                    >
-                      {processingRequest === request.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <X className="w-4 h-4" />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="gradient-activity"
-                      onClick={() => handleAcceptRequest(request)}
-                      disabled={processingRequest === request.id}
-                    >
-                      {processingRequest === request.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Check className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-                </motion.div>
-              ))}
+            <div className="space-y-4">
+              {requests.map((request, index) => {
+                const currentMinutes = editingMinutes[request.id] ?? request.requestedMinutes;
+                const isModified = currentMinutes !== request.requestedMinutes;
+                
+                return (
+                  <motion.div
+                    key={request.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="p-4 bg-muted/30 rounded-xl border border-border/50"
+                  >
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="w-10 h-10 rounded-full gradient-activity flex items-center justify-center text-lg font-bold text-primary-foreground">
+                        {request.childName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground">{request.childName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Requested {request.requestedMinutes} minutes
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Adjustable Minutes */}
+                    <div className="flex items-center justify-between bg-card/50 rounded-lg p-3 mb-3">
+                      <p className="text-sm text-muted-foreground">Grant:</p>
+                      <div className="flex items-center gap-3">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => adjustRequestMinutes(request.id, request.requestedMinutes, -5)}
+                          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-muted/80"
+                          disabled={currentMinutes <= 5}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </motion.button>
+                        <div className="text-center min-w-[60px]">
+                          <motion.span
+                            key={currentMinutes}
+                            initial={{ scale: 1.2 }}
+                            animate={{ scale: 1 }}
+                            className={`text-xl font-bold ${isModified ? 'text-primary' : 'text-foreground'}`}
+                          >
+                            {currentMinutes}
+                          </motion.span>
+                          <span className="text-sm text-muted-foreground ml-1">min</span>
+                        </div>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => adjustRequestMinutes(request.id, request.requestedMinutes, 5)}
+                          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-muted/80"
+                          disabled={currentMinutes >= 120}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </motion.button>
+                      </div>
+                    </div>
+                    
+                    {isModified && (
+                      <p className="text-xs text-primary mb-3 text-center">
+                        Modified from {request.requestedMinutes} → {currentMinutes} minutes
+                      </p>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeclineRequest(request)}
+                        disabled={processingRequest === request.id}
+                      >
+                        {processingRequest === request.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <X className="w-4 h-4 mr-1" />
+                            Decline
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1 gradient-activity"
+                        onClick={() => handleAcceptRequest(request)}
+                        disabled={processingRequest === request.id}
+                      >
+                        {processingRequest === request.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4 mr-1" />
+                            Approve {currentMinutes}m
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </motion.div>

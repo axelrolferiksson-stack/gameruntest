@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/BottomNav";
-import { Settings, Edit2, Camera, Star, Clock, Users, Loader2 } from "lucide-react";
+import { Settings, Edit2, Camera, Star, Clock, Users, Loader2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +22,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState(false);
   const [pendingRequest, setPendingRequest] = useState(false);
+  const [requestMinutes, setRequestMinutes] = useState(15);
 
   const stats = [
     { label: "Total Steps", value: "124,500", icon: "👟" },
@@ -127,6 +128,10 @@ const Profile = () => {
 
   const handleAskForTime = async () => {
     if (!profile?.id || !parentInfo?.id) return;
+    if (requestMinutes < 5 || requestMinutes > 120) {
+      toast.error("Please select between 5 and 120 minutes");
+      return;
+    }
 
     setRequesting(true);
     try {
@@ -135,14 +140,14 @@ const Profile = () => {
         .insert({
           child_id: profile.id,
           parent_id: parentInfo.id,
-          requested_minutes: 15,
+          requested_minutes: requestMinutes,
           status: "pending",
         });
 
       if (error) throw error;
 
       toast.success("Request sent!", {
-        description: "Your parent will see your request for 15 minutes.",
+        description: `Your parent will see your request for ${requestMinutes} minutes.`,
       });
       setPendingRequest(true);
     } catch (error) {
@@ -151,6 +156,10 @@ const Profile = () => {
     } finally {
       setRequesting(false);
     }
+  };
+
+  const adjustMinutes = (amount: number) => {
+    setRequestMinutes(prev => Math.max(5, Math.min(120, prev + amount)));
   };
 
   return (
@@ -309,6 +318,61 @@ const Profile = () => {
               </div>
             </div>
 
+            {/* Time Selector */}
+            {!pendingRequest && (
+              <div className="mb-4">
+                <p className="text-sm text-muted-foreground mb-3 text-center">How much time do you need?</p>
+                <div className="flex items-center justify-center gap-4">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => adjustMinutes(-5)}
+                    className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-muted/80"
+                    disabled={requestMinutes <= 5}
+                  >
+                    <Minus className="w-5 h-5" />
+                  </motion.button>
+                  <div className="text-center min-w-[100px]">
+                    <motion.p
+                      key={requestMinutes}
+                      initial={{ scale: 1.2 }}
+                      animate={{ scale: 1 }}
+                      className="text-4xl font-bold text-primary"
+                    >
+                      {requestMinutes}
+                    </motion.p>
+                    <p className="text-xs text-muted-foreground">minutes</p>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => adjustMinutes(5)}
+                    className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-muted/80"
+                    disabled={requestMinutes >= 120}
+                  >
+                    <Plus className="w-5 h-5" />
+                  </motion.button>
+                </div>
+                <div className="flex justify-center gap-2 mt-3">
+                  {[15, 30, 45, 60].map((mins) => (
+                    <motion.button
+                      key={mins}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setRequestMinutes(mins)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        requestMinutes === mins
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {mins}m
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-3">
               <Button
                 className="flex-1 gradient-activity hover:opacity-90"
@@ -320,7 +384,7 @@ const Profile = () => {
                 ) : (
                   <Clock className="w-4 h-4 mr-2" />
                 )}
-                {pendingRequest ? "Request Pending" : "Ask for Screen Time"}
+                {pendingRequest ? "Request Pending" : `Ask for ${requestMinutes} min`}
               </Button>
             </div>
 
