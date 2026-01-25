@@ -27,7 +27,7 @@ const parentSteps: OnboardingStep[] = [
   {
     icon: <Users className="w-8 h-8" />,
     title: "Welcome, Parent!",
-    description: "MoveTime helps you motivate your kids to stay active while managing their screen time in a healthy way.",
+    description: "GameRun helps you motivate your kids to stay active while managing their screen time in a healthy way.",
     color: "gradient-hero"
   },
   {
@@ -47,8 +47,8 @@ const parentSteps: OnboardingStep[] = [
 const childSteps: OnboardingStep[] = [
   {
     icon: <Sparkles className="w-8 h-8" />,
-    title: "Welcome to MoveTime!",
-    description: "Get ready to move, earn, and play! The more you move, the more screen time you earn.",
+    title: "Welcome to GameRun!",
+    description: "Get ready to move, earn, and play! The more you run, the more screen time you earn.",
     color: "gradient-activity"
   },
   {
