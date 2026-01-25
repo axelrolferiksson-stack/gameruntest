@@ -20,6 +20,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { ParentNav } from "@/components/parent/ParentNav";
+import { ScreenTimeInsights } from "@/components/parent/ScreenTimeInsights";
 
 interface LinkedChild {
   id: string;
@@ -44,6 +46,7 @@ export default function ParentDashboard() {
   const [loading, setLoading] = useState(true);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [editingMinutes, setEditingMinutes] = useState<Record<string, number>>({});
+  const [activeTab, setActiveTab] = useState<"home" | "screentime">("home");
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -337,7 +340,12 @@ export default function ParentDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Stats Grid */}
+        {/* Navigation Tabs */}
+        <ParentNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+        {activeTab === "home" ? (
+          <>
+            {/* Stats Grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -568,6 +576,12 @@ export default function ParentDashboard() {
             </div>
           )}
         </motion.div>
+          </>
+        ) : (
+          <ScreenTimeInsights 
+            children={children.map(c => ({ id: c.id, name: c.name, avatar: c.avatar }))} 
+          />
+        )}
       </main>
     </div>
   );
