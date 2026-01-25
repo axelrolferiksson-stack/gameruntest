@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { healthKitService, type HealthData } from "@/services/healthKit";
 import { notificationService } from "@/services/notifications";
 import { BottomNav } from "@/components/BottomNav";
+import { StatsSection } from "@/components/home/StatsSection";
 import logo from "@/assets/logo.png";
 
 const dailyChallenges = [
@@ -282,9 +283,11 @@ export default function ChildDashboard() {
           </Button>
         </motion.div>
 
+        {/* Stats Section */}
+        <StatsSection />
 
         {/* Start Activity Button */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-6">
           <Button
             onClick={() => navigate("/pass")}
             className="w-full h-14 text-lg font-display font-bold gradient-hero shadow-neon relative overflow-hidden group"
