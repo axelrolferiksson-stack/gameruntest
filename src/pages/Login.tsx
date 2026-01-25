@@ -9,16 +9,18 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 type UserType = 'parent' | 'child' | null;
+type AuthMode = 'signup' | 'signin';
 
 export default function Login() {
   const [userType, setUserType] = useState<UserType>(null);
   const [showForm, setShowForm] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { signUp } = useAuth();
+  const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
 
   const handleSelectType = (type: UserType) => {
@@ -27,7 +29,11 @@ export default function Login() {
   };
 
   const handleBack = () => {
-    if (showForm) {
+    if (showForm && authMode === 'signup') {
+      setShowForm(false);
+      setUserType(null);
+    } else if (authMode === 'signin') {
+      setAuthMode('signup');
       setShowForm(false);
       setUserType(null);
     }
@@ -38,16 +44,36 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const { error } = await signUp(email, password, displayName, userType!);
-      if (error) {
-        toast.error(error.message);
+      if (authMode === 'signin') {
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success('Welcome back to GameRun!');
+        }
       } else {
-        toast.success('Account created! Welcome to GameRun!');
-        navigate(userType === 'parent' ? '/parent' : '/child');
+        const { error } = await signUp(email, password, displayName, userType!);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success('Account created! Welcome to GameRun!');
+          navigate(userType === 'parent' ? '/parent' : '/child');
+        }
       }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSwitchToSignIn = () => {
+    setAuthMode('signin');
+    setShowForm(true);
+  };
+
+  const handleSwitchToSignUp = () => {
+    setAuthMode('signup');
+    setShowForm(false);
+    setUserType(null);
   };
 
   return (
@@ -96,8 +122,8 @@ export default function Login() {
           </motion.div>
         )}
 
-        {/* Select User Type */}
-        {!showForm && (
+        {/* Select User Type - only show for signup */}
+        {!showForm && authMode === 'signup' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -136,11 +162,81 @@ export default function Login() {
                 <p className="text-sm text-muted-foreground">Track activity & earn screen time</p>
               </div>
             </motion.button>
+
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Already have an account?{' '}
+              <button 
+                onClick={handleSwitchToSignIn}
+                className="text-primary hover:underline font-medium"
+              >
+                Sign in
+              </button>
+            </p>
+          </motion.div>
+        )}
+
+        {/* Sign In Form */}
+        {showForm && authMode === 'signin' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl p-6 shadow-card border border-border/50"
+          >
+            <h2 className="text-center text-xl font-semibold text-foreground mb-6">
+              Welcome back
+            </h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-muted border-border"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="bg-muted border-border"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full shadow-glow-primary"
+                size="lg"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </form>
+
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Don't have an account?{' '}
+              <button 
+                onClick={handleSwitchToSignUp}
+                className="text-primary hover:underline font-medium"
+              >
+                Sign up
+              </button>
+            </p>
           </motion.div>
         )}
 
         {/* Signup Form */}
-        {showForm && (
+        {showForm && authMode === 'signup' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -200,6 +296,16 @@ export default function Login() {
                 {isLoading ? 'Creating...' : 'Create Account'}
               </Button>
             </form>
+
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Already have an account?{' '}
+              <button 
+                onClick={handleSwitchToSignIn}
+                className="text-primary hover:underline font-medium"
+              >
+                Sign in
+              </button>
+            </p>
           </motion.div>
         )}
       </div>
