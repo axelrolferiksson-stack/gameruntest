@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ActivityRing } from "@/components/ActivityRing";
-import { ScreenTimeCard } from "@/components/ScreenTimeCard";
-import { Footprints, Zap, MapPin, ChevronRight, Sparkles, Timer, Trophy, Target } from "lucide-react";
+import { Footprints, Zap, MapPin, ChevronRight, Sparkles, Timer, Trophy, Target, Settings } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
-import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { healthKitService, type HealthData } from "@/services/healthKit";
 import { notificationService } from "@/services/notifications";
@@ -88,12 +86,17 @@ export default function ChildDashboard() {
               />
             </Link>
             <motion.div
-              className="text-right bg-card/80 backdrop-blur-md px-4 py-2 rounded-2xl neon-border"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <p className="text-xs text-muted-foreground">Balance</p>
-              <p className="font-bold text-primary text-lg">{screenTimeEarned}m</p>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/settings")}
+                className="text-foreground hover:bg-primary/20"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
             </motion.div>
           </div>
         </header>
@@ -108,54 +111,84 @@ export default function ChildDashboard() {
           <p className="text-muted-foreground text-sm mt-1">Let's get moving and earn screen time!</p>
         </motion.div>
 
-        {/* Today's Goal Card */}
+        {/* Today's Goal Card - Enhanced Design */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-card rounded-3xl p-6 shadow-card neon-border mb-6 relative overflow-hidden"
+          className="bg-gradient-to-br from-card via-card to-card/80 rounded-3xl p-6 shadow-card neon-border mb-6 relative overflow-hidden"
         >
-          <div className="absolute inset-0 gradient-glow opacity-50" />
+          {/* Subtle gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+          
+          {/* Animated glow effect */}
+          <motion.div 
+            className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-primary/20 blur-3xl"
+            animate={{ opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 3, repeat: Infinity }}
+          />
+          
           <div className="relative">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <p className="text-muted-foreground text-sm flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
                 Today's Goal
               </p>
-              <span className="text-xs bg-primary/20 text-primary px-3 py-1 rounded-full font-medium">
+              <motion.span 
+                className="text-xs bg-primary/20 text-primary px-4 py-1.5 rounded-full font-semibold border border-primary/30"
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
                 {goalProgress.toFixed(0)}% Complete
-              </span>
+              </motion.span>
             </div>
-            <div className="flex justify-center mb-4">
-              <ActivityRing progress={goalProgress} size={160} strokeWidth={12}>
+            
+            <div className="flex justify-center mb-6">
+              <ActivityRing progress={goalProgress} size={180} strokeWidth={14}>
                 <div className="text-center">
                   <motion.p
-                    className="font-display font-bold text-4xl text-gradient-glow"
+                    className="font-display font-bold text-5xl text-primary"
                     key={currentKm}
-                    initial={{ scale: 1.2 }}
-                    animate={{ scale: 1 }}
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    style={{ textShadow: '0 0 30px hsl(200 100% 50% / 0.5)' }}
                   >
                     {currentKm.toFixed(1)}
                   </motion.p>
-                  <p className="text-xs text-muted-foreground">of {dailyGoalKm} km</p>
+                  <p className="text-sm text-muted-foreground mt-1">of {dailyGoalKm} km</p>
                 </div>
               </ActivityRing>
             </div>
 
-            {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-2 mt-4">
-              <div className="text-center p-2 bg-muted/30 rounded-xl">
-                <p className="text-lg font-bold text-primary">{healthData.steps.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">Steps</p>
-              </div>
-              <div className="text-center p-2 bg-muted/30 rounded-xl">
-                <p className="text-lg font-bold text-primary">{healthData.activeMinutes}</p>
-                <p className="text-[10px] text-muted-foreground">Active Min</p>
-              </div>
-              <div className="text-center p-2 bg-muted/30 rounded-xl">
-                <p className="text-lg font-bold text-primary">{screenTimeEarned}m</p>
-                <p className="text-[10px] text-muted-foreground">Earned</p>
-              </div>
+            {/* Stats row with enhanced styling */}
+            <div className="grid grid-cols-3 gap-3">
+              <motion.div 
+                className="text-center p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20"
+                whileHover={{ scale: 1.03, y: -2 }}
+              >
+                <p className="text-xl font-bold text-primary" style={{ textShadow: '0 0 20px hsl(200 100% 50% / 0.3)' }}>
+                  {healthData.steps.toLocaleString().replace(/,/g, ' ')}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Steps</p>
+              </motion.div>
+              <motion.div 
+                className="text-center p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20"
+                whileHover={{ scale: 1.03, y: -2 }}
+              >
+                <p className="text-xl font-bold text-primary" style={{ textShadow: '0 0 20px hsl(200 100% 50% / 0.3)' }}>
+                  {healthData.activeMinutes}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Active Min</p>
+              </motion.div>
+              <motion.div 
+                className="text-center p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20"
+                whileHover={{ scale: 1.03, y: -2 }}
+              >
+                <p className="text-xl font-bold text-primary" style={{ textShadow: '0 0 20px hsl(200 100% 50% / 0.3)' }}>
+                  {screenTimeEarned}m
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Earned</p>
+              </motion.div>
             </div>
           </div>
         </motion.div>
@@ -249,11 +282,6 @@ export default function ChildDashboard() {
           </Button>
         </motion.div>
 
-        {/* Screen Time Cards */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <ScreenTimeCard minutes={screenTimeEarned} type="earned" />
-          <ScreenTimeCard minutes={screenTimeRemaining} type="remaining" />
-        </div>
 
         {/* Start Activity Button */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

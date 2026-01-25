@@ -4,8 +4,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Users, User, Trophy, ChevronRight, Footprints, Zap, MapPin, Star, Timer, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Users, User, Trophy, ChevronRight, Footprints, Zap, MapPin, Star, Timer, Sparkles, Settings } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 
 interface Challenge {
@@ -104,6 +104,7 @@ const ChallengeIcon = ({ type }: { type: "steps" | "speed" | "location" }) => {
 
 const Challenges = () => {
   const [activeTab, setActiveTab] = useState("community");
+  const navigate = useNavigate();
 
   const communityChallenges = challenges.filter((c) => c.type === "community");
   const personalChallenges = challenges.filter((c) => c.type === "personal");
@@ -129,7 +130,14 @@ const Challenges = () => {
               />
             </Link>
             <h1 className="font-display text-xl font-bold text-foreground">Challenges</h1>
-            <div className="w-10" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/settings")}
+              className="text-foreground hover:bg-primary/20"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
           </div>
 
           {/* Tabs */}
