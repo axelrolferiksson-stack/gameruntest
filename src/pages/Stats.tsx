@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, Footprints, Timer, MapPin, Trophy, Flame, Zap } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { Link } from "react-router-dom";
-import logo from "@/assets/logo-white.png";
+import logo from "@/assets/logo.png";
 import { useState } from "react";
 
 const weeklyData = [
@@ -35,7 +35,7 @@ interface StatCardProps {
 
 const StatCard = ({ title, value, unit, change, icon, delay = 0 }: StatCardProps) => {
   const isPositive = change >= 0;
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -47,7 +47,7 @@ const StatCard = ({ title, value, unit, change, icon, delay = 0 }: StatCardProps
       <div className="absolute inset-0 gradient-glow opacity-20" />
       <div className="relative">
         <div className="flex items-start justify-between mb-3">
-          <motion.div 
+          <motion.div
             className="w-10 h-10 rounded-xl gradient-activity flex items-center justify-center shadow-glow-primary"
             whileHover={{ rotate: 10 }}
           >
@@ -89,14 +89,14 @@ const Stats = () => {
           animate={{ x: [0, 20, 0], y: [0, 30, 0] }}
           transition={{ duration: 8, repeat: Infinity }}
         />
-        
+
         <div className="px-6 pt-12">
           <div className="flex items-center justify-between mb-6">
             <Link to="/child" className="hover:opacity-80 transition-opacity">
-              <motion.img 
-                src={logo} 
-                alt="GameRun" 
-                className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]" 
+              <motion.img
+                src={logo}
+                alt="GameRun"
+                className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]"
                 whileHover={{ scale: 1.1 }}
               />
             </Link>
@@ -111,7 +111,7 @@ const Stats = () => {
             className="bg-card rounded-2xl p-4 neon-border mb-6 flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
-              <motion.div 
+              <motion.div
                 className="w-12 h-12 rounded-xl gradient-hero flex items-center justify-center shadow-glow-primary"
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
@@ -132,13 +132,22 @@ const Stats = () => {
           {/* Period Tabs */}
           <Tabs value={period} onValueChange={setPeriod} className="w-full mb-6">
             <TabsList className="grid grid-cols-3 w-full bg-card neon-border">
-              <TabsTrigger value="week" className="data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary">
+              <TabsTrigger
+                value="week"
+                className="data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary"
+              >
                 Week
               </TabsTrigger>
-              <TabsTrigger value="month" className="data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary">
+              <TabsTrigger
+                value="month"
+                className="data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary"
+              >
                 Month
               </TabsTrigger>
-              <TabsTrigger value="year" className="data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary">
+              <TabsTrigger
+                value="year"
+                className="data-[state=active]:gradient-activity data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-primary"
+              >
                 Year
               </TabsTrigger>
             </TabsList>
@@ -200,9 +209,9 @@ const Stats = () => {
                       <stop offset="100%" stopColor="hsl(200, 100%, 50%)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis 
-                    dataKey={xKey} 
-                    axisLine={false} 
+                  <XAxis
+                    dataKey={xKey}
+                    axisLine={false}
                     tickLine={false}
                     tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 12 }}
                   />
@@ -239,18 +248,14 @@ const Stats = () => {
                       <stop offset="100%" stopColor="hsl(220, 100%, 55%)" />
                     </linearGradient>
                   </defs>
-                  <XAxis 
-                    dataKey={xKey} 
-                    axisLine={false} 
+                  <XAxis
+                    dataKey={xKey}
+                    axisLine={false}
                     tickLine={false}
                     tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 12 }}
                   />
                   <YAxis hide />
-                  <Bar
-                    dataKey="screenTime"
-                    fill="url(#barGradient)"
-                    radius={[8, 8, 0, 0]}
-                  />
+                  <Bar dataKey="screenTime" fill="url(#barGradient)" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
