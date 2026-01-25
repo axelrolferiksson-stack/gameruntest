@@ -39,6 +39,27 @@ const Profile = () => {
     if (profile?.id) {
       fetchParentInfo();
       checkPendingRequest();
+
+      // Subscribe to realtime updates for parent-child links
+      const channel = supabase
+        .channel('parent-child-links')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'parent_child_links',
+            filter: `child_id=eq.${profile.id}`,
+          },
+          () => {
+            fetchParentInfo();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [profile?.id]);
 
