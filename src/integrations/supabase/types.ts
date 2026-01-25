@@ -158,7 +158,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_parent_of_profile: { Args: { profile_id: string }; Returns: boolean }
     }
     Enums: {
       user_role: "parent" | "child"
