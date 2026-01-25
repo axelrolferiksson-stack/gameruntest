@@ -1,26 +1,39 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Play, Square, MapPin, Clock, Tv, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Play, Square, MapPin, Clock, Tv, AlertTriangle, Timer, ChevronRight, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { healthKitService } from "@/services/healthKit";
 import { supabase } from "@/integrations/supabase/client";
+import { BottomNav } from "@/components/BottomNav";
+import { format } from "date-fns";
 
 interface PassSession {
   startTime: Date;
   startDistance: number;
 }
 
+interface ActivityLog {
+  id: string;
+  logged_at: string;
+  distance_meters: number;
+  screen_time_earned: number;
+  active_minutes: number;
+}
+
 export default function Pass() {
+  const [view, setView] = useState<"home" | "active" | "screentime">("home");
   const [isActive, setIsActive] = useState(false);
   const [session, setSession] = useState<PassSession | null>(null);
   const [currentDistance, setCurrentDistance] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
+  const [screenTimeBalance, setScreenTimeBalance] = useState(0);
+  const [passHistory, setPassHistory] = useState<ActivityLog[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const distanceRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -31,16 +44,42 @@ export default function Pass() {
   const distanceTraveled = session ? currentDistance - session.startDistance : 0;
   const earnedMinutes = Math.floor(distanceTraveled / 100);
 
+  // Fetch screen time balance and history
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!profile) return;
+      
+      // Fetch balance
+      const { data: balanceData } = await supabase
+        .from("screen_time_balance")
+        .select("minutes_remaining")
+        .eq("user_id", profile.id)
+        .maybeSingle();
+      
+      if (balanceData) {
+        setScreenTimeBalance(balanceData.minutes_remaining);
+      }
+
+      // Fetch history
+      const { data: historyData } = await supabase
+        .from("activity_logs")
+        .select("*")
+        .eq("user_id", profile.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      
+      if (historyData) {
+        setPassHistory(historyData);
+      }
+    };
+    fetchData();
+  }, [profile]);
+
   // Request HealthKit permission on mount
   useEffect(() => {
     const requestPermission = async () => {
       const granted = await healthKitService.requestAuthorization();
       setHasPermission(granted);
-      if (!granted) {
-        toast.error("HealthKit permission required", {
-          description: "Please enable Health access in Settings",
-        });
-      }
     };
     requestPermission();
   }, []);
@@ -61,12 +100,11 @@ export default function Pass() {
   useEffect(() => {
     if (isActive && session) {
       const updateDistance = async () => {
-        // Use getDistanceSince for more accurate tracking during session
         const distance = await healthKitService.getDistanceSince(session.startTime);
         setCurrentDistance(session.startDistance + distance);
       };
       updateDistance();
-      distanceRef.current = setInterval(updateDistance, 3000); // Update every 3s
+      distanceRef.current = setInterval(updateDistance, 3000);
     }
     return () => {
       if (distanceRef.current) clearInterval(distanceRef.current);
@@ -91,6 +129,7 @@ export default function Pass() {
     setCurrentDistance(data.distance);
     setElapsedSeconds(0);
     setIsActive(true);
+    setView("active");
     toast.success("Pass started! Get moving!");
   }, [hasPermission]);
 
@@ -100,12 +139,10 @@ export default function Pass() {
     setIsActive(false);
     setSaving(true);
 
-    const endTime = new Date();
     const finalDistance = distanceTraveled;
     const finalEarnedMinutes = Math.floor(finalDistance / 100);
 
     try {
-      // Save activity log
       const { error: logError } = await supabase.from("activity_logs").insert({
         user_id: profile.id,
         steps: 0,
@@ -117,18 +154,19 @@ export default function Pass() {
 
       if (logError) throw logError;
 
-      // Update screen time balance
       const { data: balanceData } = await supabase
         .from("screen_time_balance")
         .select("*")
         .eq("user_id", profile.id)
         .maybeSingle();
 
+      const newBalance = (balanceData?.minutes_remaining || 0) + finalEarnedMinutes;
+
       if (balanceData) {
         await supabase
           .from("screen_time_balance")
           .update({
-            minutes_remaining: balanceData.minutes_remaining + finalEarnedMinutes,
+            minutes_remaining: newBalance,
             last_updated: new Date().toISOString(),
           })
           .eq("user_id", profile.id);
@@ -139,9 +177,20 @@ export default function Pass() {
         });
       }
 
+      setScreenTimeBalance(newBalance);
       toast.success(`Pass complete! Earned ${finalEarnedMinutes} minutes`);
       setSession(null);
       setElapsedSeconds(0);
+      setView("home");
+      
+      // Refresh history
+      const { data: historyData } = await supabase
+        .from("activity_logs")
+        .select("*")
+        .eq("user_id", profile.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (historyData) setPassHistory(historyData);
     } catch (error) {
       console.error("Error saving pass:", error);
       toast.error("Failed to save pass data");
@@ -156,125 +205,308 @@ export default function Pass() {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
-        <div className="max-w-lg mx-auto px-6 py-4 flex items-center">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/child")}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex-1 text-center font-display font-bold text-xl text-foreground">
-            Activity Pass
+  const formatBalance = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
+
+  // Active Pass View
+  if (view === "active") {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
+          <div className="max-w-lg mx-auto px-6 py-4 flex items-center">
+            <Button variant="ghost" size="icon" onClick={() => !isActive && setView("home")} disabled={isActive}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1 text-center font-display font-bold text-xl text-foreground">
+              Activity Pass
+            </div>
+            <div className="w-10" />
           </div>
-          <div className="w-10" />
+        </header>
+
+        <main className="max-w-lg mx-auto px-6 py-8">
+          {hasPermission === false && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3"
+            >
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              <p className="text-sm text-destructive">
+                HealthKit access required. Please enable in device Settings.
+              </p>
+            </motion.div>
+          )}
+
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center mb-8">
+            <div className="font-display font-bold text-6xl text-foreground mb-2">
+              {formatTime(elapsedSeconds)}
+            </div>
+            <p className="text-muted-foreground">{isActive ? "Pass Active" : "Ready to start"}</p>
+          </motion.div>
+
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <Card className="border-border/50">
+              <CardContent className="p-4 text-center">
+                <MapPin className="w-6 h-6 mx-auto mb-2 text-primary" />
+                <p className="font-display font-bold text-2xl text-foreground">
+                  {(distanceTraveled / 1000).toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground">km traveled</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50">
+              <CardContent className="p-4 text-center">
+                <Tv className="w-6 h-6 mx-auto mb-2 text-secondary" />
+                <p className="font-display font-bold text-2xl text-foreground">{earnedMinutes}</p>
+                <p className="text-xs text-muted-foreground">min earned</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="mb-8 border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Next minute at</span>
+                <span className="font-display font-bold text-foreground">
+                  {((earnedMinutes + 1) * 100 - distanceTraveled).toFixed(0)}m
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <motion.div className="h-full bg-primary" animate={{ width: `${distanceTraveled % 100}%` }} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            {!isActive ? (
+              <Button
+                onClick={handleStart}
+                disabled={hasPermission === false}
+                className="w-full h-16 text-lg font-display font-bold gradient-hero"
+              >
+                <Play className="w-6 h-6 mr-2" />
+                Start Pass
+              </Button>
+            ) : (
+              <Button
+                onClick={handleEnd}
+                disabled={saving}
+                variant="destructive"
+                className="w-full h-16 text-lg font-display font-bold"
+              >
+                <Square className="w-6 h-6 mr-2" />
+                {saving ? "Saving..." : "End Pass"}
+              </Button>
+            )}
+          </motion.div>
+
+          <div className="mt-8 text-center text-sm text-muted-foreground">
+            <p className="mb-1">100 meters = 1 minute screen time</p>
+            <p>Walk or run to earn more!</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Screentime View
+  if (view === "screentime") {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
+          <div className="max-w-lg mx-auto px-6 py-4 flex items-center">
+            <Button variant="ghost" size="icon" onClick={() => setView("home")}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex-1 text-center font-display font-bold text-xl text-foreground">
+              Screen Time
+            </div>
+            <div className="w-10" />
+          </div>
+        </header>
+
+        <main className="max-w-lg mx-auto px-6 py-8">
+          {/* Balance Display */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gradient-to-br from-card via-card to-card/80 rounded-3xl p-8 neon-border mb-6 text-center relative overflow-hidden"
+          >
+            <motion.div 
+              className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-primary/20 blur-3xl"
+              animate={{ opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            />
+            <div className="relative">
+              <p className="text-muted-foreground text-sm mb-2">Available Balance</p>
+              <motion.p 
+                className="font-display font-bold text-5xl text-primary"
+                style={{ textShadow: '0 0 30px hsl(200 100% 50% / 0.5)' }}
+              >
+                {formatBalance(screenTimeBalance)}
+              </motion.p>
+            </div>
+          </motion.div>
+
+          {/* Quick Use Options */}
+          <div className="mb-6">
+            <h3 className="font-display font-semibold text-lg text-foreground mb-3">Use Screen Time</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {[15, 30, 60].map((mins) => (
+                <motion.button
+                  key={mins}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  disabled={screenTimeBalance < mins}
+                  onClick={() => toast.info(`Activated ${mins} minutes of screen time`)}
+                  className={`p-4 rounded-2xl text-center neon-border transition-all ${
+                    screenTimeBalance >= mins 
+                      ? "bg-card hover:bg-primary/10" 
+                      : "bg-card/50 opacity-50 cursor-not-allowed"
+                  }`}
+                >
+                  <p className="font-display font-bold text-xl text-primary">{mins}</p>
+                  <p className="text-xs text-muted-foreground">minutes</p>
+                </motion.button>
+              ))}
+            </div>
+          </div>
+        </main>
+
+        <BottomNav />
+      </div>
+    );
+  }
+
+  // Home View (default)
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <header className="relative px-6 pt-12 pb-4">
+        <div className="flex items-center justify-between mb-4">
+          <motion.div
+            className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center"
+            whileHover={{ scale: 1.05 }}
+          >
+            <span className="font-display font-bold text-xl text-primary">
+              {profile?.display_name?.[0]?.toUpperCase() || "U"}
+            </span>
+          </motion.div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Balance</p>
+            <p className="font-display font-bold text-lg text-foreground">{formatBalance(screenTimeBalance)}</p>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-6 py-8">
-        {/* Permission Warning */}
-        {hasPermission === false && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3"
-          >
-            <AlertTriangle className="w-5 h-5 text-destructive" />
-            <p className="text-sm text-destructive">
-              HealthKit access required. Please enable in device Settings.
-            </p>
-          </motion.div>
-        )}
-
-        {/* Timer Display */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center mb-8"
-        >
-          <div className="font-display font-bold text-6xl text-foreground mb-2">
-            {formatTime(elapsedSeconds)}
-          </div>
-          <p className="text-muted-foreground">
-            {isActive ? "Pass Active" : "Ready to start"}
-          </p>
-        </motion.div>
-
-        {/* Stats Cards */}
+      <main className="px-6">
+        {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <Card className="border-border/50">
-            <CardContent className="p-4 text-center">
-              <MapPin className="w-6 h-6 mx-auto mb-2 text-primary" />
-              <p className="font-display font-bold text-2xl text-foreground">
-                {(distanceTraveled / 1000).toFixed(2)}
-              </p>
-              <p className="text-xs text-muted-foreground">km traveled</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-4 text-center">
-              <Tv className="w-6 h-6 mx-auto mb-2 text-secondary" />
-              <p className="font-display font-bold text-2xl text-foreground">
-                {earnedMinutes}
-              </p>
-              <p className="text-xs text-muted-foreground">min earned</p>
-            </CardContent>
-          </Card>
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleStart}
+            className="p-6 rounded-2xl bg-card neon-border text-left relative overflow-hidden group"
+          >
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+            <div className="relative">
+              <div className="w-10 h-10 rounded-xl gradient-activity flex items-center justify-center mb-3 shadow-glow-primary">
+                <Play className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <p className="font-display font-bold text-foreground">Start Pass</p>
+            </div>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setView("screentime")}
+            className="p-6 rounded-2xl bg-card neon-border text-left relative overflow-hidden group"
+          >
+            <motion.div 
+              className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+            />
+            <div className="relative">
+              <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center mb-3 shadow-glow-secondary">
+                <Tv className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <p className="font-display font-bold text-foreground">Screentime</p>
+            </div>
+          </motion.button>
         </div>
 
-        {/* Progress Info */}
-        <Card className="mb-8 border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">Next minute at</span>
-              <span className="font-display font-bold text-foreground">
-                {((earnedMinutes + 1) * 100 - distanceTraveled).toFixed(0)}m
-              </span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-primary"
-                animate={{ width: `${(distanceTraveled % 100)}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Start/End Button */}
+        {/* Earning Summary */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          className="mb-6"
         >
-          {!isActive ? (
-            <Button
-              onClick={handleStart}
-              disabled={hasPermission === false}
-              className="w-full h-16 text-lg font-display font-bold gradient-hero"
-            >
-              <Play className="w-6 h-6 mr-2" />
-              Start Pass
-            </Button>
-          ) : (
-            <Button
-              onClick={handleEnd}
-              disabled={saving}
-              variant="destructive"
-              className="w-full h-16 text-lg font-display font-bold"
-            >
-              <Square className="w-6 h-6 mr-2" />
-              {saving ? "Saving..." : "End Pass"}
-            </Button>
-          )}
+          <h2 className="font-display font-semibold text-xl text-foreground mb-4">Earning Summary</h2>
+          <Card className="neon-border">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-muted-foreground">Today</span>
+                <span className="font-display font-bold text-foreground flex items-center gap-1">
+                  <Timer className="w-4 h-4 text-primary" />
+                  {passHistory
+                    .filter((log) => log.logged_at === new Date().toISOString().split("T")[0])
+                    .reduce((sum, log) => sum + log.screen_time_earned, 0)}m
+                </span>
+              </div>
+              <Button 
+                variant="secondary" 
+                className="w-full"
+                onClick={() => navigate("/child")}
+              >
+                See latest stats
+              </Button>
+            </CardContent>
+          </Card>
         </motion.div>
 
-        {/* Instructions */}
-        <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p className="mb-1">100 meters = 1 minute screen time</p>
-          <p>Walk or run to earn more!</p>
-        </div>
+        {/* Pass History */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <h2 className="font-display font-semibold text-xl text-foreground mb-4">Spending History</h2>
+          <Card className="neon-border">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-muted-foreground">Passes</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                </div>
+              </div>
+              
+              {passHistory.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No pass history yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {passHistory.slice(0, 5).map((log) => (
+                    <div key={log.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                      <div>
+                        <p className="text-sm text-muted-foreground">{format(new Date(log.logged_at), "MMM d")}</p>
+                      </div>
+                      <p className="font-display font-bold text-foreground">
+                        -{log.screen_time_earned}m
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

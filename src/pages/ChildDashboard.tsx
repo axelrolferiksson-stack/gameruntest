@@ -285,17 +285,6 @@ export default function ChildDashboard() {
 
         {/* Stats Section */}
         <StatsSection />
-
-        {/* Start Activity Button */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-6">
-          <Button
-            onClick={() => navigate("/pass")}
-            className="w-full h-14 text-lg font-display font-bold gradient-hero shadow-neon relative overflow-hidden group"
-          >
-            <motion.div className="absolute inset-0 gradient-activity opacity-0 group-hover:opacity-100 transition-opacity" />
-            <span className="relative flex items-center gap-2">🏃‍♂️ Start Activity Pass</span>
-          </Button>
-        </motion.div>
       </main>
 
       <BottomNav />
