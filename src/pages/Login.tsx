@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Users, User, ArrowLeft, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 type UserType = 'parent' | 'child' | null;
 type AuthMode = 'signup' | 'signin';
@@ -21,7 +20,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   
   const { signUp, signIn } = useAuth();
-  const navigate = useNavigate();
 
   const handleSelectType = (type: UserType) => {
     setUserType(type);
@@ -48,19 +46,22 @@ export default function Login() {
         const { error } = await signIn(email, password);
         if (error) {
           toast.error(error.message);
+          setIsLoading(false);
         } else {
           toast.success('Welcome back to GameRun!');
+          // Redirect handled by AuthRedirect in App.tsx
         }
       } else {
         const { error } = await signUp(email, password, displayName, userType!);
         if (error) {
           toast.error(error.message);
+          setIsLoading(false);
         } else {
           toast.success('Account created! Welcome to GameRun!');
-          navigate(userType === 'parent' ? '/parent' : '/child');
+          // Redirect handled by AuthRedirect in App.tsx
         }
       }
-    } finally {
+    } catch {
       setIsLoading(false);
     }
   };
