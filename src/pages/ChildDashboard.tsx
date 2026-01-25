@@ -10,12 +10,14 @@ import {
   Timer,
   Bike,
   Trophy,
-  Sparkles
+  Sparkles,
+  Bell
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { healthKitService, type HealthData } from "@/services/healthKit";
+import { notificationService } from "@/services/notifications";
 
 const mockChallenges = [
   {
@@ -57,7 +59,8 @@ export default function ChildDashboard() {
   const [challenges] = useState(mockChallenges);
   const [healthData, setHealthData] = useState<HealthData>({ steps: 0, distance: 0, activeMinutes: 0 });
   const [screenTimeEarned, setScreenTimeEarned] = useState(0);
-  const [screenTimeRemaining] = useState(30);
+  const [screenTimeRemaining] = useState(0); // Start at 0 to trigger notification
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -73,6 +76,25 @@ export default function ChildDashboard() {
     const interval = setInterval(fetchHealthData, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Check for screen time notifications
+  useEffect(() => {
+    if (screenTimeRemaining === 0 && notificationsEnabled) {
+      notificationService.checkScreenTimeAndNotify(screenTimeRemaining);
+    }
+  }, [screenTimeRemaining, notificationsEnabled]);
+
+  const handleEnableNotifications = async () => {
+    const granted = await notificationService.requestPermission();
+    if (granted) {
+      setNotificationsEnabled(true);
+      toast.success('Notifications enabled!');
+      // Immediately check screen time
+      notificationService.checkScreenTimeAndNotify(screenTimeRemaining);
+    } else {
+      toast.error('Notification permission denied');
+    }
+  };
 
   const activityProgress = Math.min(100, Math.floor((healthData.steps / 5000) * 100));
 
@@ -92,11 +114,11 @@ export default function ChildDashboard() {
       {/* Header */}
       <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
-          <Button variant="ghost" size="icon">
-            <Trophy className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={handleEnableNotifications}>
+            <Bell className={`w-5 h-5 ${notificationsEnabled ? 'text-primary' : ''}`} />
           </Button>
           <div className="font-display font-bold text-xl text-foreground">
-            Move<span className="text-primary">Time</span>
+            Game<span className="text-primary">Run</span>
           </div>
           <Button variant="ghost" size="icon" onClick={handleSignOut}>
             <LogOut className="w-5 h-5" />
