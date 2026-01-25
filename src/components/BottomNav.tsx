@@ -1,14 +1,13 @@
 import { NavLink } from "./NavLink";
-import { User, Trophy, Users, BarChart3, Home } from "lucide-react";
+import { User, Home, Ticket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const navItems = [
   { to: "/child", icon: Home, label: "Home" },
-  { to: "/challenges", icon: Trophy, label: "Challenges" },
+  { to: "/pass", icon: Ticket, label: "Pass" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
-
 export const BottomNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/30 safe-area-pb z-50">
