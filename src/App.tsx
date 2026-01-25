@@ -18,6 +18,9 @@ import Stats from "./pages/Stats";
 import AddChild from "./pages/AddChild";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import HelpSupport from "./pages/HelpSupport";
+import Downtime from "./pages/parent/Downtime";
+import AppLimits from "./pages/parent/AppLimits";
+import AlwaysAllowed from "./pages/parent/AlwaysAllowed";
 
 const queryClient = new QueryClient();
 
@@ -114,6 +117,30 @@ function AppRoutes() {
         } 
       />
       <Route 
+        path="/parent/downtime" 
+        element={
+          <ProtectedRoute allowedRole="parent">
+            <Downtime />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/parent/app-limits" 
+        element={
+          <ProtectedRoute allowedRole="parent">
+            <AppLimits />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/parent/always-allowed" 
+        element={
+          <ProtectedRoute allowedRole="parent">
+            <AlwaysAllowed />
+          </ProtectedRoute>
+        } 
+      />
+      <Route
         path="/child" 
         element={
           <ProtectedRoute allowedRole="child">
