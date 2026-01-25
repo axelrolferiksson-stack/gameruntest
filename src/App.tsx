@@ -11,6 +11,10 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import Pass from "./pages/Pass";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
+import Challenges from "./pages/Challenges";
+import Friends from "./pages/Friends";
+import Stats from "./pages/Stats";
 
 const queryClient = new QueryClient();
 
@@ -119,6 +123,38 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute allowedRole="child">
+            <Profile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/challenges" 
+        element={
+          <ProtectedRoute allowedRole="child">
+            <Challenges />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/friends" 
+        element={
+          <ProtectedRoute allowedRole="child">
+            <Friends />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/stats" 
+        element={
+          <ProtectedRoute allowedRole="child">
+            <Stats />
           </ProtectedRoute>
         } 
       />

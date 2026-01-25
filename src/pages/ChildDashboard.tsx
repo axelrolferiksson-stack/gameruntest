@@ -3,64 +3,32 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ActivityRing } from "@/components/ActivityRing";
 import { ScreenTimeCard } from "@/components/ScreenTimeCard";
-import { ChallengeCard } from "@/components/ChallengeCard";
 import { 
   LogOut, 
   Footprints, 
-  Timer,
-  Bike,
-  Trophy,
+  Zap,
+  MapPin,
   Sparkles,
-  Bell,
-  Settings
+  ChevronRight
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { healthKitService, type HealthData } from "@/services/healthKit";
 import { notificationService } from "@/services/notifications";
+import { BottomNav } from "@/components/BottomNav";
+import logo from "@/assets/logo.png";
 
-const mockChallenges = [
-  {
-    id: 1,
-    title: "Morning Walk",
-    description: "Take 1,000 steps before 10 AM",
-    reward: 15,
-    icon: Footprints,
-    progress: 750,
-    target: 1000,
-    unit: "steps",
-    isCompleted: false,
-  },
-  {
-    id: 2,
-    title: "Active Hour",
-    description: "Stay active for 30 minutes straight",
-    reward: 20,
-    icon: Timer,
-    progress: 30,
-    target: 30,
-    unit: "min",
-    isCompleted: true,
-  },
-  {
-    id: 3,
-    title: "Bike Ride",
-    description: "Go on a 2km bike ride",
-    reward: 25,
-    icon: Bike,
-    progress: 0.5,
-    target: 2,
-    unit: "km",
-    isCompleted: false,
-  },
+const dailyChallenges = [
+  { id: 1, title: "15,000 steps today", reward: 2, icon: Footprints, progress: 12572, target: 15000 },
+  { id: 2, title: "Run faster than 25 km/h", reward: 1, icon: Zap, progress: 22, target: 25 },
+  { id: 3, title: "Visit Bäckby Centrum", reward: 1, icon: MapPin, progress: 0, target: 1 },
 ];
 
 export default function ChildDashboard() {
-  const [challenges] = useState(mockChallenges);
   const [healthData, setHealthData] = useState<HealthData>({ steps: 0, distance: 0, activeMinutes: 0 });
   const [screenTimeEarned, setScreenTimeEarned] = useState(0);
-  const [screenTimeRemaining] = useState(0); // Start at 0 to trigger notification
+  const [screenTimeRemaining] = useState(0);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
@@ -97,13 +65,10 @@ export default function ChildDashboard() {
     }
   };
 
-  const activityProgress = Math.min(100, Math.floor((healthData.steps / 5000) * 100));
-
-  const handleStartChallenge = (title: string) => {
-    toast.success(`Starting: ${title}!`, {
-      description: "Get moving to earn screen time!",
-    });
-  };
+  // Calculate goal progress (e.g., 3.6 km out of 5 km daily goal)
+  const dailyGoalKm = 5;
+  const currentKm = healthData.distance / 1000;
+  const goalProgress = Math.min(100, (currentKm / dailyGoalKm) * 100);
 
   const handleSignOut = async () => {
     await signOut();
@@ -111,112 +76,106 @@ export default function ChildDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
-        <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
-            <Settings className="w-5 h-5" />
-          </Button>
-          <div className="font-display font-bold text-xl text-foreground">
-            Game<span className="text-primary">Run</span>
+      <header className="px-6 pt-12 pb-4">
+        <div className="flex items-center justify-between mb-2">
+          <img src={logo} alt="GameRun" className="w-10 h-10" />
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Balance</p>
+            <p className="font-bold text-foreground">{screenTimeEarned}m</p>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleSignOut}>
-            <LogOut className="w-5 h-5" />
-          </Button>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-6 py-8">
+      <main className="px-6">
         {/* Greeting */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
+          className="mb-6"
         >
-          <h1 className="font-display font-bold text-3xl text-foreground mb-2">
-            Hey, {profile?.display_name || 'there'}! 👋
+          <h1 className="font-display font-bold text-2xl text-foreground">
+            Hey {profile?.display_name || 'there'}, looking great!
           </h1>
-          <p className="text-muted-foreground">Let's get moving today!</p>
         </motion.div>
 
-        {/* Activity Ring */}
+        {/* Today's Goal Card */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex justify-center mb-8"
+          transition={{ delay: 0.1 }}
+          className="bg-card rounded-3xl p-6 shadow-card border border-border/50 mb-6"
         >
-          <ActivityRing progress={activityProgress} size={200} strokeWidth={16} />
+          <p className="text-muted-foreground text-sm mb-4">Todays Goal</p>
+          <div className="flex justify-center mb-4">
+            <ActivityRing progress={goalProgress} size={160} strokeWidth={12}>
+              <div className="text-center">
+                <p className="font-display font-bold text-4xl text-foreground">{currentKm.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">km</p>
+              </div>
+            </ActivityRing>
+          </div>
+          
+          {/* Pagination dots */}
+          <div className="flex justify-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-primary" />
+            <div className="w-2 h-2 rounded-full bg-muted" />
+            <div className="w-2 h-2 rounded-full bg-muted" />
+          </div>
+        </motion.div>
+
+        {/* Daily Challenges */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6"
+        >
+          <h2 className="font-display font-semibold text-lg text-foreground mb-3">Daily Challenges</h2>
+          <div className="space-y-2">
+            {dailyChallenges.map((challenge, index) => {
+              const Icon = challenge.icon;
+              return (
+                <motion.div
+                  key={challenge.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 + index * 0.1 }}
+                  className="flex items-center justify-between py-3 px-4 bg-card rounded-xl border border-border/50"
+                >
+                  <div className="flex items-center gap-3">
+                    <Icon className="w-5 h-5 text-primary" />
+                    <span className="text-sm text-foreground">{challenge.title}</span>
+                  </div>
+                  <span className="text-sm font-bold gradient-reward text-transparent bg-clip-text">
+                    +{challenge.reward}
+                  </span>
+                </motion.div>
+              );
+            })}
+          </div>
+          <Button 
+            variant="link" 
+            className="text-primary p-0 h-auto mt-2"
+            onClick={() => navigate('/challenges')}
+          >
+            See All Challenges
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
         </motion.div>
 
         {/* Screen Time Cards */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <ScreenTimeCard minutes={screenTimeEarned} type="earned" />
           <ScreenTimeCard minutes={screenTimeRemaining} type="remaining" />
         </div>
 
-        {/* Today's Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-card rounded-2xl p-5 shadow-card border border-border/50 mb-8"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-secondary" />
-            <h2 className="font-display font-bold text-lg text-foreground">Today's Progress</h2>
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="font-display font-bold text-2xl text-foreground">{healthData.steps.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Steps</p>
-            </div>
-            <div>
-              <p className="font-display font-bold text-2xl text-foreground">{(healthData.distance / 1000).toFixed(1)}km</p>
-              <p className="text-xs text-muted-foreground">Distance</p>
-            </div>
-            <div>
-              <p className="font-display font-bold text-2xl text-foreground">{healthData.activeMinutes}m</p>
-              <p className="text-xs text-muted-foreground">Active</p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Challenges */}
+        {/* Start Activity Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display font-bold text-xl text-foreground">Challenges</h2>
-            <span className="text-sm text-muted-foreground">
-              {challenges.filter(c => c.isCompleted).length}/{challenges.length} done
-            </span>
-          </div>
-          <div className="space-y-4">
-            {challenges.map((challenge, index) => (
-              <motion.div
-                key={challenge.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 + index * 0.1 }}
-              >
-                <ChallengeCard
-                  {...challenge}
-                  onStart={() => handleStartChallenge(challenge.title)}
-                />
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Start Pass Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
         >
           <Button
             onClick={() => navigate('/pass')}
@@ -226,6 +185,8 @@ export default function ChildDashboard() {
           </Button>
         </motion.div>
       </main>
+
+      <BottomNav />
     </div>
   );
 }
