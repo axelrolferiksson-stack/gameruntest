@@ -4,10 +4,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { BottomNav } from "@/components/BottomNav";
 import { Settings, Edit2, Camera, Star, Clock, Users, Loader2, Minus, Plus, Target, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import logo from "@/assets/logo.png";
 import { useActivityGoal } from "@/hooks/useActivityGoal";
 
 interface ParentInfo {
@@ -176,15 +175,7 @@ const Profile = () => {
         />
 
         <div className="relative px-6 pt-12">
-          <div className="flex items-center justify-between mb-8">
-            <Link to="/child" className="hover:opacity-80 transition-opacity">
-              <motion.img
-                src={logo}
-                alt="GameRun"
-                className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]"
-                whileHover={{ scale: 1.1 }}
-              />
-            </Link>
+          <div className="flex items-center justify-end mb-8">
             <Button
               variant="ghost"
               size="icon"

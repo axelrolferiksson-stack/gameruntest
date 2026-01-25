@@ -64,7 +64,7 @@ export default function PrivacyPolicy() {
       {/* Header */}
       <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="font-display font-bold text-xl text-foreground">Privacy Policy</h1>

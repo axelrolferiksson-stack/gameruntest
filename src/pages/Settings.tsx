@@ -15,7 +15,8 @@ import {
   Target,
   Trophy,
   Clock,
-  Zap
+  Zap,
+  MapPin
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -63,8 +64,11 @@ export default function Settings() {
   const [isHealthKitAvailable] = useState(healthKitService.isAvailable());
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   
-  // Notification states
+  // Permission states
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  
+  // Notification states
   const [challengeAlerts, setChallengeAlerts] = useState(true);
   const [dailyReminders, setDailyReminders] = useState(true);
   const [friendActivity, setFriendActivity] = useState(false);
@@ -94,8 +98,14 @@ export default function Settings() {
       setParentRequests(localStorage.getItem('notif_parent') !== 'false');
     };
 
+    const checkLocationStatus = () => {
+      const storedLocation = localStorage.getItem('location_enabled');
+      setLocationEnabled(storedLocation === 'true');
+    };
+
     checkHealthKitStatus();
     checkNotificationStatus();
+    checkLocationStatus();
   }, [isHealthKitAvailable]);
 
   const handleHealthKitToggle = async (enabled: boolean) => {
@@ -137,6 +147,32 @@ export default function Settings() {
     } else {
       setPushEnabled(false);
       toast.success('Notifications disabled');
+    }
+  };
+
+  const handleLocationToggle = async (enabled: boolean) => {
+    if (enabled) {
+      try {
+        const result = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+          });
+        });
+        setLocationEnabled(true);
+        localStorage.setItem('location_enabled', 'true');
+        toast.success('Location enabled!', {
+          description: 'You can now get location-based challenges.',
+        });
+      } catch (error) {
+        toast.error('Location access denied', {
+          description: 'Please enable location in your device settings.',
+        });
+      }
+    } else {
+      setLocationEnabled(false);
+      localStorage.setItem('location_enabled', 'false');
+      toast.success('Location disabled');
     }
   };
 
@@ -186,6 +222,17 @@ export default function Settings() {
               title="Daily Step Goal"
               description={`${dailyStepGoal.toLocaleString()} steps`}
               onClick={() => setGoalModalOpen(true)}
+            />
+            <SettingItem
+              icon={<MapPin className="w-5 h-5" />}
+              title="Location Access"
+              description="Enable location-based challenges"
+              action={
+                <Switch
+                  checked={locationEnabled}
+                  onCheckedChange={handleLocationToggle}
+                />
+              }
             />
           </div>
         </motion.div>

@@ -2,14 +2,15 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Play, Square, MapPin, Clock, Tv, AlertTriangle, Timer, ChevronRight, History } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Play, Square, MapPin, Clock, Tv, AlertTriangle, Timer, ChevronRight, History, Settings, Info } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { healthKitService } from "@/services/healthKit";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { format } from "date-fns";
+import logo from "@/assets/logo.png";
 
 interface PassSession {
   startTime: Date;
@@ -412,17 +413,28 @@ export default function Pass() {
     <div className="min-h-screen bg-background pb-24">
       <header className="relative px-6 pt-12 pb-4">
         <div className="flex items-center justify-between mb-4">
-          <motion.div
-            className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center"
-            whileHover={{ scale: 1.05 }}
-          >
-            <span className="font-display font-bold text-xl text-primary">
-              {profile?.display_name?.[0]?.toUpperCase() || "U"}
-            </span>
-          </motion.div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Balance</p>
-            <p className="font-display font-bold text-lg text-foreground">{formatBalance(screenTimeBalance)}</p>
+          <Link to="/child" className="hover:opacity-80 transition-opacity">
+            <motion.img
+              src={logo}
+              alt="GameRun"
+              className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            />
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Balance</p>
+              <p className="font-display font-bold text-lg text-foreground">{formatBalance(screenTimeBalance)}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/settings")}
+              className="text-foreground hover:bg-primary/20"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       </header>
@@ -444,6 +456,7 @@ export default function Pass() {
                 <Play className="w-5 h-5 text-primary-foreground" />
               </div>
               <p className="font-display font-bold text-foreground">Start Pass</p>
+              <p className="text-xs text-muted-foreground mt-1">Track activity & earn time</p>
             </div>
           </motion.button>
 
@@ -461,9 +474,32 @@ export default function Pass() {
                 <Tv className="w-5 h-5 text-primary-foreground" />
               </div>
               <p className="font-display font-bold text-foreground">Screentime</p>
+              <p className="text-xs text-muted-foreground mt-1">View & use your balance</p>
             </div>
           </motion.button>
         </div>
+
+        {/* How It Works Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <Card className="neon-border bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Info className="w-4 h-4 text-primary" />
+                <h3 className="font-display font-semibold text-foreground">How It Works</h3>
+              </div>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>• <span className="text-foreground font-medium">5,000 steps = 1 hour</span> of screen time</p>
+                <p>• A pass tracks your activity until you end it</p>
+                <p>• Walk, run, or explore to earn more time</p>
+                <p>• Use your balance anytime in Screentime</p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* Earning Summary */}
         <motion.div
