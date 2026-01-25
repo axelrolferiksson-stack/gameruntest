@@ -11,13 +11,19 @@ import {
   HelpCircle,
   ChevronRight,
   Activity,
-  LogOut
+  LogOut,
+  Target,
+  Trophy,
+  Clock,
+  Zap
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { healthKitService } from "@/services/healthKit";
 import { notificationService } from "@/services/notifications";
 import { useAuth } from "@/hooks/useAuth";
+import { useActivityGoal } from "@/hooks/useActivityGoal";
+import { ActivityGoalModal } from "@/components/settings/ActivityGoalModal";
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -52,9 +58,17 @@ function SettingItem({ icon, title, description, action, onClick }: SettingItemP
 export default function Settings() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { dailyStepGoal, updateGoal } = useActivityGoal();
   const [healthKitEnabled, setHealthKitEnabled] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [isHealthKitAvailable] = useState(healthKitService.isAvailable());
+  const [goalModalOpen, setGoalModalOpen] = useState(false);
+  
+  // Notification states
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [challengeAlerts, setChallengeAlerts] = useState(true);
+  const [dailyReminders, setDailyReminders] = useState(true);
+  const [friendActivity, setFriendActivity] = useState(false);
+  const [parentRequests, setParentRequests] = useState(true);
 
   const handleSignOut = async () => {
     await signOut();
@@ -62,20 +76,22 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    // Check if HealthKit was previously authorized
     const checkHealthKitStatus = async () => {
       if (isHealthKitAvailable) {
-        // In a real app, we'd check the actual authorization status
         const storedStatus = localStorage.getItem('healthkit_enabled');
         setHealthKitEnabled(storedStatus === 'true');
       }
     };
 
-    // Check notification status
     const checkNotificationStatus = () => {
       if ('Notification' in window) {
-        setNotificationsEnabled(Notification.permission === 'granted');
+        setPushEnabled(Notification.permission === 'granted');
       }
+      // Load saved notification preferences
+      setChallengeAlerts(localStorage.getItem('notif_challenges') !== 'false');
+      setDailyReminders(localStorage.getItem('notif_reminders') !== 'false');
+      setFriendActivity(localStorage.getItem('notif_friends') === 'true');
+      setParentRequests(localStorage.getItem('notif_parent') !== 'false');
     };
 
     checkHealthKitStatus();
@@ -109,23 +125,29 @@ export default function Settings() {
     }
   };
 
-  const handleNotificationsToggle = async (enabled: boolean) => {
+  const handlePushToggle = async (enabled: boolean) => {
     if (enabled) {
       const granted = await notificationService.requestPermission();
       if (granted) {
-        setNotificationsEnabled(true);
+        setPushEnabled(true);
         toast.success('Notifications enabled!');
       } else {
         toast.error('Notification permission denied');
       }
     } else {
-      setNotificationsEnabled(false);
+      setPushEnabled(false);
       toast.success('Notifications disabled');
     }
   };
 
+  const handleNotificationPref = (key: string, value: boolean, setter: (v: boolean) => void) => {
+    setter(value);
+    localStorage.setItem(key, value.toString());
+    toast.success(value ? 'Enabled' : 'Disabled');
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-8">
       {/* Header */}
       <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center gap-4">
@@ -160,10 +182,10 @@ export default function Settings() {
               }
             />
             <SettingItem
-              icon={<Activity className="w-5 h-5" />}
-              title="Activity Goals"
-              description="Set your daily step target"
-              onClick={() => toast.info('Coming soon!')}
+              icon={<Target className="w-5 h-5" />}
+              title="Daily Step Goal"
+              description={`${dailyStepGoal.toLocaleString()} steps`}
+              onClick={() => setGoalModalOpen(true)}
             />
           </div>
         </motion.div>
@@ -182,11 +204,59 @@ export default function Settings() {
             <SettingItem
               icon={<Bell className="w-5 h-5" />}
               title="Push Notifications"
-              description="Get alerts for challenges & reminders"
+              description="Master toggle for all alerts"
               action={
                 <Switch
-                  checked={notificationsEnabled}
-                  onCheckedChange={handleNotificationsToggle}
+                  checked={pushEnabled}
+                  onCheckedChange={handlePushToggle}
+                />
+              }
+            />
+            <SettingItem
+              icon={<Trophy className="w-5 h-5" />}
+              title="Challenge Alerts"
+              description="When challenges start or end"
+              action={
+                <Switch
+                  checked={challengeAlerts}
+                  onCheckedChange={(v) => handleNotificationPref('notif_challenges', v, setChallengeAlerts)}
+                  disabled={!pushEnabled}
+                />
+              }
+            />
+            <SettingItem
+              icon={<Zap className="w-5 h-5" />}
+              title="Daily Reminders"
+              description="Get moving reminders"
+              action={
+                <Switch
+                  checked={dailyReminders}
+                  onCheckedChange={(v) => handleNotificationPref('notif_reminders', v, setDailyReminders)}
+                  disabled={!pushEnabled}
+                />
+              }
+            />
+            <SettingItem
+              icon={<Activity className="w-5 h-5" />}
+              title="Friend Activity"
+              description="When friends complete challenges"
+              action={
+                <Switch
+                  checked={friendActivity}
+                  onCheckedChange={(v) => handleNotificationPref('notif_friends', v, setFriendActivity)}
+                  disabled={!pushEnabled}
+                />
+              }
+            />
+            <SettingItem
+              icon={<Clock className="w-5 h-5" />}
+              title="Screen Time Requests"
+              description="When parent responds to requests"
+              action={
+                <Switch
+                  checked={parentRequests}
+                  onCheckedChange={(v) => handleNotificationPref('notif_parent', v, setParentRequests)}
+                  disabled={!pushEnabled}
                 />
               }
             />
@@ -229,12 +299,12 @@ export default function Settings() {
             <SettingItem
               icon={<Shield className="w-5 h-5" />}
               title="Privacy Policy"
-              onClick={() => toast.info('Coming soon!')}
+              onClick={() => navigate('/privacy-policy')}
             />
             <SettingItem
               icon={<HelpCircle className="w-5 h-5" />}
               title="Help & Support"
-              onClick={() => toast.info('Coming soon!')}
+              onClick={() => navigate('/help-support')}
             />
           </div>
         </motion.div>
@@ -266,6 +336,14 @@ export default function Settings() {
           <p>GameRun v1.0.0</p>
         </motion.div>
       </main>
+
+      {/* Activity Goal Modal */}
+      <ActivityGoalModal
+        open={goalModalOpen}
+        onOpenChange={setGoalModalOpen}
+        currentGoal={dailyStepGoal}
+        onSave={updateGoal}
+      />
     </div>
   );
 }

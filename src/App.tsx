@@ -16,6 +16,8 @@ import Challenges from "./pages/Challenges";
 import Friends from "./pages/Friends";
 import Stats from "./pages/Stats";
 import AddChild from "./pages/AddChild";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import HelpSupport from "./pages/HelpSupport";
 
 const queryClient = new QueryClient();
 
@@ -159,14 +161,30 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
-      <Route 
-        path="/stats" 
-        element={
-          <ProtectedRoute allowedRole="child">
-            <Stats />
-          </ProtectedRoute>
-        } 
-      />
+        <Route 
+          path="/stats" 
+          element={
+            <ProtectedRoute allowedRole="child">
+              <Stats />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/privacy-policy" 
+          element={
+            <ProtectedRoute>
+              <PrivacyPolicy />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/help-support" 
+          element={
+            <ProtectedRoute>
+              <HelpSupport />
+            </ProtectedRoute>
+          } 
+        />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
