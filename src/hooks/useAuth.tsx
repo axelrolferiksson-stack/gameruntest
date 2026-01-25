@@ -53,12 +53,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-  fetchProfile(session.user.id);
-} else {
-  setProfile(null);
-  setLoading(false);
-}
-
+          fetchProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
+      }
+    );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
