@@ -3,23 +3,14 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ActivityRing } from "@/components/ActivityRing";
 import { ScreenTimeCard } from "@/components/ScreenTimeCard";
-import { 
-  Footprints, 
-  Zap,
-  MapPin,
-  ChevronRight,
-  Sparkles,
-  Timer,
-  Trophy,
-  Target
-} from "lucide-react";
+import { Footprints, Zap, MapPin, ChevronRight, Sparkles, Timer, Trophy, Target } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { healthKitService, type HealthData } from "@/services/healthKit";
 import { notificationService } from "@/services/notifications";
 import { BottomNav } from "@/components/BottomNav";
-import logo from "@/assets/logo-white.png";
+import logo from "@/assets/logo.png";
 
 const dailyChallenges = [
   { id: 1, title: "15,000 steps today", reward: 2, icon: Footprints, progress: 12572, target: 15000 },
@@ -28,7 +19,12 @@ const dailyChallenges = [
 ];
 
 const howToEarn = [
-  { icon: Footprints, title: "Walk & Run", description: "Every 1000 steps = 5 min", color: "from-blue-500 to-cyan-400" },
+  {
+    icon: Footprints,
+    title: "Walk & Run",
+    description: "Every 1000 steps = 5 min",
+    color: "from-blue-500 to-cyan-400",
+  },
   { icon: Trophy, title: "Complete Challenges", description: "Earn bonus time!", color: "from-cyan-400 to-blue-500" },
   { icon: MapPin, title: "Visit Places", description: "Explore for rewards", color: "from-blue-600 to-indigo-500" },
 ];
@@ -83,15 +79,15 @@ export default function ChildDashboard() {
         <header className="relative px-6 pt-12 pb-4">
           <div className="flex items-center justify-between mb-2">
             <Link to="/child" className="hover:opacity-80 transition-opacity">
-              <motion.img 
-                src={logo} 
-                alt="GameRun" 
-                className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]" 
+              <motion.img
+                src={logo}
+                alt="GameRun"
+                className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               />
             </Link>
-            <motion.div 
+            <motion.div
               className="text-right bg-card/80 backdrop-blur-md px-4 py-2 rounded-2xl neon-border"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -105,13 +101,9 @@ export default function ChildDashboard() {
 
       <main className="px-6 relative">
         {/* Greeting */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
           <h1 className="font-display font-bold text-2xl text-foreground">
-            Hey {profile?.display_name || 'there'}! 👋
+            Hey {profile?.display_name || "there"}! 👋
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Let's get moving and earn screen time!</p>
         </motion.div>
@@ -137,7 +129,7 @@ export default function ChildDashboard() {
             <div className="flex justify-center mb-4">
               <ActivityRing progress={goalProgress} size={160} strokeWidth={12}>
                 <div className="text-center">
-                  <motion.p 
+                  <motion.p
                     className="font-display font-bold text-4xl text-gradient-glow"
                     key={currentKm}
                     initial={{ scale: 1.2 }}
@@ -149,7 +141,7 @@ export default function ChildDashboard() {
                 </div>
               </ActivityRing>
             </div>
-            
+
             {/* Quick stats */}
             <div className="grid grid-cols-3 gap-2 mt-4">
               <div className="text-center p-2 bg-muted/30 rounded-xl">
@@ -189,7 +181,9 @@ export default function ChildDashboard() {
                 whileHover={{ scale: 1.05, y: -5 }}
                 className="bg-card rounded-2xl p-4 neon-border text-center relative overflow-hidden group cursor-pointer"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-10 transition-opacity`}
+                />
                 <div className="relative">
                   <div className="w-10 h-10 mx-auto rounded-xl gradient-activity flex items-center justify-center mb-2 shadow-glow-primary">
                     <item.icon className="w-5 h-5 text-primary-foreground" />
@@ -230,7 +224,7 @@ export default function ChildDashboard() {
                     <div>
                       <span className="text-sm text-foreground">{challenge.title}</span>
                       <div className="w-24 h-1 bg-muted rounded-full mt-1 overflow-hidden">
-                        <motion.div 
+                        <motion.div
                           className="h-full gradient-activity rounded-full"
                           initial={{ width: 0 }}
                           animate={{ width: `${progressPercent}%` }}
@@ -239,22 +233,17 @@ export default function ChildDashboard() {
                       </div>
                     </div>
                   </div>
-                  <motion.span 
+                  <motion.span
                     className="text-sm font-bold text-primary flex items-center gap-1"
                     whileHover={{ scale: 1.1 }}
                   >
-                    <Timer className="w-3 h-3" />
-                    +{challenge.reward}m
+                    <Timer className="w-3 h-3" />+{challenge.reward}m
                   </motion.span>
                 </motion.div>
               );
             })}
           </div>
-          <Button 
-            variant="link" 
-            className="text-primary p-0 h-auto mt-2"
-            onClick={() => navigate('/challenges')}
-          >
+          <Button variant="link" className="text-primary p-0 h-auto mt-2" onClick={() => navigate("/challenges")}>
             See All Challenges
             <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
@@ -267,21 +256,13 @@ export default function ChildDashboard() {
         </div>
 
         {/* Start Activity Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
           <Button
-            onClick={() => navigate('/pass')}
+            onClick={() => navigate("/pass")}
             className="w-full h-14 text-lg font-display font-bold gradient-hero shadow-neon relative overflow-hidden group"
           >
-            <motion.div
-              className="absolute inset-0 gradient-activity opacity-0 group-hover:opacity-100 transition-opacity"
-            />
-            <span className="relative flex items-center gap-2">
-              🏃‍♂️ Start Activity Pass
-            </span>
+            <motion.div className="absolute inset-0 gradient-activity opacity-0 group-hover:opacity-100 transition-opacity" />
+            <span className="relative flex items-center gap-2">🏃‍♂️ Start Activity Pass</span>
           </Button>
         </motion.div>
       </main>
