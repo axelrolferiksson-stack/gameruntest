@@ -257,6 +257,24 @@ export default function ParentDashboard() {
     }
   };
 
+  const handleRemoveChild = async (childId: string, childName: string) => {
+    try {
+      const { error } = await supabase
+        .from("parent_child_links")
+        .delete()
+        .eq("parent_id", profile?.id)
+        .eq("child_id", childId);
+
+      if (error) throw error;
+
+      toast.success(`${childName} has been removed from your account`);
+      setChildren(prev => prev.filter(c => c.id !== childId));
+    } catch (error) {
+      console.error("Error removing child:", error);
+      toast.error("Failed to remove child");
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
@@ -370,6 +388,7 @@ export default function ParentDashboard() {
                     isLocked={child.isLocked}
                     onGrantTime={() => handleGrantTime(child.id, child.name)}
                     onViewDetails={() => toast.info(`Viewing ${child.name}'s details`)}
+                    onRemove={() => handleRemoveChild(child.id, child.name)}
                   />
                 </motion.div>
               ))}
