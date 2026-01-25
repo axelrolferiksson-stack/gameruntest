@@ -8,6 +8,7 @@ interface Profile {
   display_name: string;
   avatar_url: string | null;
   role: 'parent' | 'child';
+  onboarding_complete: boolean;
 }
 
 interface AuthContextType {
