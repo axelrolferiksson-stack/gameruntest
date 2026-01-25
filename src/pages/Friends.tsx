@@ -6,21 +6,33 @@ import { Button } from "@/components/ui/button";
 import {
   Search,
   UserPlus,
-  Phone,
-  BarChart3,
-  MapPin,
-  User,
-  Copy,
-  Check,
-  Share2,
-  MessageCircle,
   Trophy,
   Zap,
+  Settings,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+
+// Social media icons as simple components
+const InstagramIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+  </svg>
+);
+
+const SnapchatIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.217-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12.017 24c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z"/>
+  </svg>
+);
+
+const TikTokIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+  </svg>
+);
 
 interface Friend {
   id: string;
@@ -42,15 +54,34 @@ const friends: Friend[] = [
 const Friends = () => {
   const { profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
 
-  const shareLink = `gamerun.in/i/${profile?.display_name?.toLowerCase().replace(/\s/g, "") || "user"}`;
+  const handleSocialShare = (platform: string) => {
+    const username = profile?.display_name || "user";
+    const message = `Add me on GameRun! My username is @${username.toLowerCase().replace(/\s/g, "")} 🏃‍♂️`;
+    
+    switch (platform) {
+      case 'instagram':
+        // Instagram doesn't have direct share, copy username instead
+        navigator.clipboard.writeText(`@${username.toLowerCase().replace(/\s/g, "")}`);
+        toast.success("Username copied! Share it on Instagram 📸");
+        break;
+      case 'snapchat':
+        navigator.clipboard.writeText(message);
+        toast.success("Message copied! Share it on Snapchat 👻");
+        break;
+      case 'tiktok':
+        navigator.clipboard.writeText(message);
+        toast.success("Message copied! Share it on TikTok 🎵");
+        break;
+    }
+  };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareLink);
-    setCopied(true);
-    toast.success("Link copied! Share with friends 🎉");
-    setTimeout(() => setCopied(false), 2000);
+  const handleAddByUsername = () => {
+    if (searchQuery.trim()) {
+      toast.info(`Searching for @${searchQuery}...`);
+      // In real implementation, this would search the database
+    }
   };
 
   const filteredFriends = friends.filter(
@@ -93,85 +124,85 @@ const Friends = () => {
               />
             </Link>
             <h1 className="font-display text-xl font-bold text-foreground">Friends</h1>
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-              <Button variant="ghost" size="icon" className="text-primary hover:bg-primary/20">
-                <UserPlus className="w-5 h-5" />
-              </Button>
-            </motion.div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/settings")}
+              className="text-foreground hover:bg-primary/20"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
           </div>
 
-          {/* Search */}
+          {/* Search by Username */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
-                placeholder="Search friends..."
+                placeholder="Search by username..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 bg-card neon-border rounded-xl h-12 focus:shadow-glow-primary transition-shadow"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddByUsername()}
+                className="pl-12 pr-20 bg-card neon-border rounded-xl h-12 focus:shadow-glow-primary transition-shadow"
               />
+              <Button 
+                size="sm" 
+                onClick={handleAddByUsername}
+                className="absolute right-2 top-1/2 -translate-y-1/2 gradient-activity"
+              >
+                <UserPlus className="w-4 h-4" />
+              </Button>
             </div>
           </motion.div>
 
-          {/* Invite Methods */}
+          {/* Add via Social Media */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-6"
-          >
-            <h2 className="font-display font-semibold text-foreground mb-3 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-primary" />
-              Invite Friends
-            </h2>
-            <div className="flex items-center gap-3 mb-4">
-              {[
-                { icon: Phone, label: "Contacts", gradient: false },
-                { icon: MessageCircle, label: "Message", gradient: true },
-                { icon: Share2, label: "Share", gradient: false },
-              ].map((item, index) => (
-                <motion.button
-                  key={item.label}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2 + index * 0.1 }}
-                  whileHover={{ scale: 1.1, y: -3 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                    item.gradient ? "gradient-activity shadow-glow-primary" : "bg-card neon-border"
-                  }`}
-                >
-                  <item.icon
-                    className={`w-6 h-6 ${item.gradient ? "text-primary-foreground" : "text-muted-foreground"}`}
-                  />
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Share Link */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
             className="bg-card rounded-2xl p-5 neon-border mb-6"
           >
-            <h2 className="font-display font-semibold text-foreground mb-2">Your Invite Link</h2>
-            <p className="text-sm text-muted-foreground mb-4">Share and earn bonus screen time when friends join! 🎁</p>
-
-            <div className="flex items-center gap-2 bg-muted/50 rounded-xl p-3 neon-border">
-              <span className="flex-1 text-sm text-muted-foreground truncate font-mono">{shareLink}</span>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleCopy}
-                  className={`shrink-0 ${copied ? "bg-green-500/20 text-green-400" : "gradient-activity text-primary-foreground"}`}
-                >
-                  {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
-                  {copied ? "Copied!" : "Copy"}
-                </Button>
-              </motion.div>
+            <h2 className="font-display font-semibold text-foreground mb-2 flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Add Friends via Social Media
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Share your username on social media to connect with friends! 📱
+            </p>
+            
+            <div className="flex items-center justify-center gap-4">
+              <motion.button
+                whileHover={{ scale: 1.1, y: -3 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleSocialShare('instagram')}
+                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center text-white shadow-lg"
+              >
+                <InstagramIcon />
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.1, y: -3 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleSocialShare('snapchat')}
+                className="w-16 h-16 rounded-2xl bg-yellow-400 flex items-center justify-center text-black shadow-lg"
+              >
+                <SnapchatIcon />
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.1, y: -3 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleSocialShare('tiktok')}
+                className="w-16 h-16 rounded-2xl bg-black flex items-center justify-center text-white shadow-lg border border-white/20"
+              >
+                <TikTokIcon />
+              </motion.button>
+            </div>
+            
+            <div className="mt-4 text-center">
+              <p className="text-xs text-muted-foreground">
+                Your username: <span className="text-primary font-mono">@{profile?.display_name?.toLowerCase().replace(/\s/g, "") || "user"}</span>
+              </p>
             </div>
           </motion.div>
 

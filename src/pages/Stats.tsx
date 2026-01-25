@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { BottomNav } from "@/components/BottomNav";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, Footprints, Timer, MapPin, Trophy, Flame, Zap } from "lucide-react";
+import { TrendingUp, TrendingDown, Footprints, Timer, MapPin, Trophy, Flame, Zap, Settings } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const weeklyData = [
   { day: "Mon", steps: 8432, distance: 6.2, screenTime: 45 },
@@ -68,6 +69,7 @@ const StatCard = ({ title, value, unit, change, icon, delay = 0 }: StatCardProps
 
 const Stats = () => {
   const [period, setPeriod] = useState("week");
+  const navigate = useNavigate();
 
   const data = period === "week" ? weeklyData : monthlyData;
   const xKey = period === "week" ? "day" : "week";
@@ -101,7 +103,14 @@ const Stats = () => {
               />
             </Link>
             <h1 className="font-display text-xl font-bold text-foreground">Statistics</h1>
-            <div className="w-10" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/settings")}
+              className="text-foreground hover:bg-primary/20"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
           </div>
 
           {/* Streak Banner */}
