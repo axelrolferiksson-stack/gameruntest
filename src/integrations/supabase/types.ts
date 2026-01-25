@@ -97,6 +97,7 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          onboarding_complete: boolean
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
           user_id: string
@@ -106,6 +107,7 @@ export type Database = {
           created_at?: string
           display_name: string
           id?: string
+          onboarding_complete?: boolean
           role: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id: string
@@ -115,6 +117,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          onboarding_complete?: boolean
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id?: string
