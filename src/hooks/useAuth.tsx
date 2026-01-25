@@ -30,39 +30,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-  try {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-    setProfile(data as Profile | null);
-  } catch (error) {
-    setProfile(null);
-  } finally {
-    setLoading(false); // ✅ ALWAYS ends loading
-  }
-};
+      setProfile(data as Profile | null);
+    } catch (error) {
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
 
-    // THEN check current session
-   useEffect(() => {
-  const { data: { subscription } } =
-    supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          // Defer Supabase calls with setTimeout to prevent deadlock
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-
+      
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
-        setProfile(null);
         setLoading(false);
       }
     });
 
-  return () => subscription.unsubscribe();
-}, []);
+    return () => subscription.unsubscribe();
+  }, []);
 
   const signUp = async (email: string, password: string, displayName: string, role: 'parent' | 'child') => {
     try {
