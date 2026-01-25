@@ -53,16 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Defer Supabase calls with setTimeout to prevent deadlock
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
+  fetchProfile(session.user.id);
+} else {
+  setProfile(null);
+  setLoading(false);
+}
+
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -129,18 +125,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (error) throw error;
-      return { error: null };
-    } catch (error) {
-      return { error: error as Error };
+    if (error) throw error;
+
+    if (data.user) {
+      await fetchProfile(data.user.id); // ✅ fetch profile immediately after login
     }
-  };
+
+    return { error: null };
+  } catch (error) {
+    return { error: error as Error };
+  }
+};
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
