@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, 
   ChevronRight,
@@ -39,6 +40,7 @@ interface ScreenTimeInsightsProps {
 }
 
 export function ScreenTimeInsights({ children }: ScreenTimeInsightsProps) {
+  const navigate = useNavigate();
   const [selectedChildIndex, setSelectedChildIndex] = useState(0);
   const [selectedDay, setSelectedDay] = useState(6); // Today (last index)
 
@@ -300,7 +302,10 @@ export function ScreenTimeInsights({ children }: ScreenTimeInsightsProps) {
         transition={{ delay: 0.4 }}
         className="bg-card rounded-2xl overflow-hidden"
       >
-        <button className="w-full flex items-center justify-between px-4 py-4 hover:bg-muted/30 transition-colors border-b border-border/50">
+        <button 
+          onClick={() => navigate(`/parent/downtime?childId=${mockChildData.id}`)}
+          className="w-full flex items-center justify-between px-4 py-4 hover:bg-muted/30 transition-colors border-b border-border/50"
+        >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
               <Clock className="w-4 h-4 text-white" />
@@ -309,7 +314,10 @@ export function ScreenTimeInsights({ children }: ScreenTimeInsightsProps) {
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </button>
-        <button className="w-full flex items-center justify-between px-4 py-4 hover:bg-muted/30 transition-colors border-b border-border/50">
+        <button 
+          onClick={() => navigate(`/parent/app-limits?childId=${mockChildData.id}`)}
+          className="w-full flex items-center justify-between px-4 py-4 hover:bg-muted/30 transition-colors border-b border-border/50"
+        >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
               <Gamepad2 className="w-4 h-4 text-white" />
@@ -318,7 +326,10 @@ export function ScreenTimeInsights({ children }: ScreenTimeInsightsProps) {
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </button>
-        <button className="w-full flex items-center justify-between px-4 py-4 hover:bg-muted/30 transition-colors">
+        <button 
+          onClick={() => navigate(`/parent/always-allowed?childId=${mockChildData.id}`)}
+          className="w-full flex items-center justify-between px-4 py-4 hover:bg-muted/30 transition-colors"
+        >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-white" />

@@ -55,6 +55,153 @@ export type Database = {
           },
         ]
       }
+      always_allowed_apps: {
+        Row: {
+          app_icon: string | null
+          app_name: string
+          category: string
+          child_id: string
+          created_at: string
+          id: string
+          parent_id: string
+        }
+        Insert: {
+          app_icon?: string | null
+          app_name: string
+          category?: string
+          child_id: string
+          created_at?: string
+          id?: string
+          parent_id: string
+        }
+        Update: {
+          app_icon?: string | null
+          app_name?: string
+          category?: string
+          child_id?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "always_allowed_apps_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "always_allowed_apps_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_limits: {
+        Row: {
+          app_icon: string | null
+          app_name: string
+          category: string
+          child_id: string
+          created_at: string
+          daily_limit_minutes: number
+          id: string
+          is_enabled: boolean
+          parent_id: string
+        }
+        Insert: {
+          app_icon?: string | null
+          app_name: string
+          category?: string
+          child_id: string
+          created_at?: string
+          daily_limit_minutes?: number
+          id?: string
+          is_enabled?: boolean
+          parent_id: string
+        }
+        Update: {
+          app_icon?: string | null
+          app_name?: string
+          category?: string
+          child_id?: string
+          created_at?: string
+          daily_limit_minutes?: number
+          id?: string
+          is_enabled?: boolean
+          parent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_limits_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_limits_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      downtime_schedules: {
+        Row: {
+          child_id: string
+          created_at: string
+          days_enabled: string[]
+          end_time: string
+          id: string
+          is_enabled: boolean
+          parent_id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          days_enabled?: string[]
+          end_time?: string
+          id?: string
+          is_enabled?: boolean
+          parent_id: string
+          start_time?: string
+          updated_at?: string
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          days_enabled?: string[]
+          end_time?: string
+          id?: string
+          is_enabled?: boolean
+          parent_id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "downtime_schedules_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "downtime_schedules_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_child_links: {
         Row: {
           child_id: string
