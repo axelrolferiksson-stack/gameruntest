@@ -211,19 +211,18 @@ export default function ChildDashboard() {
           </div>
         </motion.div>
 
-        {/* Motivation Banner */}
+        {/* Start Pass Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9 }}
-          className="mt-8 gradient-hero rounded-2xl p-6 text-center text-primary-foreground"
         >
-          <p className="font-display font-bold text-lg mb-2">
-            🏃‍♂️ Keep going!
-          </p>
-          <p className="text-sm opacity-90">
-            Just 250 more steps to unlock 15 extra minutes!
-          </p>
+          <Button
+            onClick={() => navigate('/pass')}
+            className="w-full h-14 text-lg font-display font-bold gradient-hero"
+          >
+            🏃‍♂️ Start Activity Pass
+          </Button>
         </motion.div>
       </main>
     </div>
