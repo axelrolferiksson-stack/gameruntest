@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Clock, Zap, Gift } from "lucide-react";
+import { Clock, Zap, Gift, Timer } from "lucide-react";
 
 interface ScreenTimeCardProps {
   minutes: number;
@@ -16,15 +16,15 @@ export const ScreenTimeCard = ({ minutes, type, className = "" }: ScreenTimeCard
       glow: "shadow-glow-primary",
     },
     remaining: {
-      icon: Clock,
+      icon: Timer,
       label: "Time Remaining",
-      gradient: "gradient-reward",
+      gradient: "gradient-hero",
       glow: "shadow-glow-secondary",
     },
     bonus: {
       icon: Gift,
       label: "Bonus Time",
-      gradient: "gradient-hero",
+      gradient: "gradient-reward",
       glow: "shadow-glow-primary",
     },
   };
@@ -40,23 +40,35 @@ export const ScreenTimeCard = ({ minutes, type, className = "" }: ScreenTimeCard
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02 }}
-      className={`${config.gradient} ${config.glow} rounded-2xl p-6 text-primary-foreground ${className}`}
+      whileHover={{ scale: 1.03, y: -5 }}
+      className={`${config.gradient} ${config.glow} rounded-2xl p-5 text-primary-foreground relative overflow-hidden ${className}`}
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm">
-          <Icon className="w-5 h-5" />
+      {/* Animated glow effect */}
+      <motion.div
+        className="absolute inset-0 bg-white/10"
+        animate={{ 
+          opacity: [0, 0.2, 0],
+          scale: [0.8, 1.2, 0.8]
+        }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+      />
+      
+      <div className="relative">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm">
+            <Icon className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-medium opacity-90">{config.label}</span>
         </div>
-        <span className="text-sm font-medium opacity-90">{config.label}</span>
+        <motion.div 
+          className="text-3xl font-display font-bold"
+          initial={{ scale: 0.5 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", delay: 0.2 }}
+        >
+          {timeDisplay}
+        </motion.div>
       </div>
-      <motion.div 
-        className="text-4xl font-display font-bold"
-        initial={{ scale: 0.5 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", delay: 0.2 }}
-      >
-        {timeDisplay}
-      </motion.div>
     </motion.div>
   );
 };
