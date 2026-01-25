@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChildCard } from "@/components/ChildCard";
@@ -10,53 +10,160 @@ import {
   TrendingUp,
   Users,
   Clock,
-  Activity
+  Activity,
+  Loader2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
-const mockChildren = [
-  {
-    id: 1,
-    name: "Emma",
-    avatar: "https://images.unsplash.com/photo-1595967444215-4e0b24f3d09a?w=150&h=150&fit=crop&crop=face",
-    screenTimeRemaining: 45,
-    activityProgress: 72,
-    isLocked: false,
-  },
-  {
-    id: 2,
-    name: "Lucas",
-    avatar: "https://images.unsplash.com/photo-1596215143922-eedeaba0d91c?w=150&h=150&fit=crop&crop=face",
-    screenTimeRemaining: 0,
-    activityProgress: 35,
-    isLocked: true,
-  },
-];
-
-const stats = [
-  { label: "Total Kids", value: "2", icon: Users, color: "gradient-activity" },
-  { label: "Avg Activity", value: "68%", icon: Activity, color: "gradient-reward" },
-  { label: "Time Granted", value: "2h 15m", icon: Clock, color: "gradient-hero" },
-  { label: "Week Trend", value: "+12%", icon: TrendingUp, color: "gradient-activity" },
-];
+interface LinkedChild {
+  id: string;
+  name: string;
+  avatar: string | null;
+  screenTimeRemaining: number;
+  activityProgress: number;
+  isLocked: boolean;
+}
 
 export default function ParentDashboard() {
-  const [children] = useState(mockChildren);
+  const [children, setChildren] = useState<LinkedChild[]>([]);
+  const [loading, setLoading] = useState(true);
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const handleGrantTime = (childName: string) => {
-    toast.success(`Granted 15 minutes to ${childName}!`, {
-      description: "Screen time has been added to their account.",
-    });
+  useEffect(() => {
+    if (profile?.id) {
+      fetchLinkedChildren();
+    }
+  }, [profile?.id]);
+
+  const fetchLinkedChildren = async () => {
+    if (!profile?.id) return;
+
+    try {
+      // Fetch parent-child links
+      const { data: links, error: linksError } = await supabase
+        .from("parent_child_links")
+        .select("child_id")
+        .eq("parent_id", profile.id);
+
+      if (linksError) {
+        console.error("Error fetching links:", linksError);
+        return;
+      }
+
+      if (!links || links.length === 0) {
+        setChildren([]);
+        setLoading(false);
+        return;
+      }
+
+      const childIds = links.map(link => link.child_id);
+
+      // Fetch child profiles
+      const { data: childProfiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", childIds);
+
+      if (profilesError) {
+        console.error("Error fetching child profiles:", profilesError);
+        return;
+      }
+
+      // Fetch screen time balances
+      const { data: balances, error: balancesError } = await supabase
+        .from("screen_time_balance")
+        .select("user_id, minutes_remaining")
+        .in("user_id", childIds);
+
+      if (balancesError) {
+        console.error("Error fetching balances:", balancesError);
+      }
+
+      // Fetch today's activity
+      const today = new Date().toISOString().split("T")[0];
+      const { data: activities, error: activitiesError } = await supabase
+        .from("activity_logs")
+        .select("user_id, distance_meters")
+        .in("user_id", childIds)
+        .eq("logged_at", today);
+
+      if (activitiesError) {
+        console.error("Error fetching activities:", activitiesError);
+      }
+
+      // Build child data
+      const linkedChildren: LinkedChild[] = (childProfiles || []).map(child => {
+        const balance = balances?.find(b => b.user_id === child.id);
+        const activity = activities?.find(a => a.user_id === child.id);
+        const screenTime = balance?.minutes_remaining || 0;
+        const distance = activity?.distance_meters || 0;
+        // Activity progress as percentage of daily goal (e.g., 5km = 5000m)
+        const activityProgress = Math.min(100, Math.round((distance / 5000) * 100));
+
+        return {
+          id: child.id,
+          name: child.display_name,
+          avatar: child.avatar_url,
+          screenTimeRemaining: screenTime,
+          activityProgress,
+          isLocked: screenTime <= 0,
+        };
+      });
+
+      setChildren(linkedChildren);
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGrantTime = async (childId: string, childName: string) => {
+    try {
+      const { data: balance } = await supabase
+        .from("screen_time_balance")
+        .select("minutes_remaining")
+        .eq("user_id", childId)
+        .maybeSingle();
+
+      const currentMinutes = balance?.minutes_remaining || 0;
+
+      const { error } = await supabase
+        .from("screen_time_balance")
+        .upsert({
+          user_id: childId,
+          minutes_remaining: currentMinutes + 15,
+          last_updated: new Date().toISOString(),
+        }, { onConflict: "user_id" });
+
+      if (error) throw error;
+
+      toast.success(`Granted 15 minutes to ${childName}!`, {
+        description: "Screen time has been added to their account.",
+      });
+
+      fetchLinkedChildren();
+    } catch (error) {
+      console.error("Error granting time:", error);
+      toast.error("Failed to grant screen time");
+    }
   };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
+
+  const stats = [
+    { label: "Total Kids", value: children.length.toString(), icon: Users, color: "gradient-activity" },
+    { label: "Avg Activity", value: children.length > 0 ? `${Math.round(children.reduce((a, c) => a + c.activityProgress, 0) / children.length)}%` : "0%", icon: Activity, color: "gradient-reward" },
+    { label: "Time Granted", value: `${children.reduce((a, c) => a + c.screenTimeRemaining, 0)}m`, icon: Clock, color: "gradient-hero" },
+    { label: "Active Kids", value: children.filter(c => !c.isLocked).length.toString(), icon: TrendingUp, color: "gradient-activity" },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -75,7 +182,7 @@ export default function ParentDashboard() {
             <Button variant="ghost" size="icon">
               <Bell className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
               <Settings className="w-5 h-5" />
             </Button>
             <Button variant="ghost" size="icon" onClick={handleSignOut}>
@@ -117,22 +224,46 @@ export default function ParentDashboard() {
             </Button>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {children.map((child, index) => (
-              <motion.div
-                key={child.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 + 0.4 }}
-              >
-                <ChildCard
-                  {...child}
-                  onGrantTime={() => handleGrantTime(child.name)}
-                  onViewDetails={() => toast.info(`Viewing ${child.name}'s details`)}
-                />
-              </motion.div>
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : children.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-12 bg-card rounded-2xl border border-border/50"
+            >
+              <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="font-display font-bold text-lg text-foreground mb-2">No children linked yet</h3>
+              <p className="text-muted-foreground mb-6">Link your child's account to start monitoring their activity</p>
+              <Button onClick={() => navigate("/parent/add-child")} className="gradient-hero">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Child
+              </Button>
+            </motion.div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {children.map((child, index) => (
+                <motion.div
+                  key={child.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <ChildCard
+                    name={child.name}
+                    avatar={child.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${child.name}`}
+                    screenTimeRemaining={child.screenTimeRemaining}
+                    activityProgress={child.activityProgress}
+                    isLocked={child.isLocked}
+                    onGrantTime={() => handleGrantTime(child.id, child.name)}
+                    onViewDetails={() => toast.info(`Viewing ${child.name}'s details`)}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -156,7 +287,7 @@ export default function ParentDashboard() {
               <Bell className="w-5 h-5" />
               <span className="text-xs">Notifications</span>
             </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2">
+            <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/settings')}>
               <Settings className="w-5 h-5" />
               <span className="text-xs">Settings</span>
             </Button>
