@@ -224,6 +224,12 @@ export default function Settings() {
               onClick={() => setGoalModalOpen(true)}
             />
             <SettingItem
+              icon={<Clock className="w-5 h-5" />}
+              title="Screen Time Ratio"
+              description="100m = 1 min (default)"
+              onClick={() => navigate("/settings")}
+            />
+            <SettingItem
               icon={<MapPin className="w-5 h-5" />}
               title="Location Access"
               description="Enable location-based challenges"

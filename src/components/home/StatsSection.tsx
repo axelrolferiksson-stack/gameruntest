@@ -1,25 +1,10 @@
 import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, TrendingDown, Footprints, Timer, MapPin, Trophy, Flame, Zap } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from "recharts";
-import { useState } from "react";
-
-const weeklyData = [
-  { day: "Mon", steps: 8432, distance: 6.2, screenTime: 45 },
-  { day: "Tue", steps: 12500, distance: 9.1, screenTime: 60 },
-  { day: "Wed", steps: 5621, distance: 4.1, screenTime: 30 },
-  { day: "Thu", steps: 15234, distance: 11.2, screenTime: 75 },
-  { day: "Fri", steps: 9876, distance: 7.3, screenTime: 50 },
-  { day: "Sat", steps: 18432, distance: 13.5, screenTime: 90 },
-  { day: "Sun", steps: 7654, distance: 5.6, screenTime: 40 },
-];
-
-const monthlyData = [
-  { week: "W1", steps: 65000, distance: 48, screenTime: 320 },
-  { week: "W2", steps: 72000, distance: 53, screenTime: 360 },
-  { week: "W3", steps: 58000, distance: 42, screenTime: 290 },
-  { week: "W4", steps: 81000, distance: 59, screenTime: 405 },
-];
+import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, BarChart, Bar, LabelList } from "recharts";
+import { useState, useEffect } from "react";
+import { healthKitService, type DailyHealthData } from "@/services/healthKit";
+import { useStreak } from "@/hooks/useStreak";
 
 interface StatCardProps {
   title: string;
@@ -63,8 +48,45 @@ const StatCard = ({ title, value, unit, change, icon, delay = 0 }: StatCardProps
   );
 };
 
+// Custom label component for white numbers above bars
+const renderCustomBarLabel = (props: any) => {
+  const { x, y, width, value } = props;
+  return (
+    <text 
+      x={x + width / 2} 
+      y={y - 8} 
+      fill="white" 
+      textAnchor="middle" 
+      fontSize={11}
+      fontWeight="bold"
+    >
+      {value}m
+    </text>
+  );
+};
+
 export const StatsSection = () => {
   const [period, setPeriod] = useState("week");
+  const [weeklyData, setWeeklyData] = useState<DailyHealthData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { streak } = useStreak();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const data = await healthKitService.getWeeklyData();
+      setWeeklyData(data);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const monthlyData = [
+    { week: "W1", steps: 65000, distance: 48, screenTime: 320 },
+    { week: "W2", steps: 72000, distance: 53, screenTime: 360 },
+    { week: "W3", steps: 58000, distance: 42, screenTime: 290 },
+    { week: "W4", steps: 81000, distance: 59, screenTime: 405 },
+  ];
 
   const data = period === "week" ? weeklyData : monthlyData;
   const xKey = period === "week" ? "day" : "week";
@@ -72,9 +94,7 @@ export const StatsSection = () => {
   const totalSteps = data.reduce((sum, d) => sum + d.steps, 0);
   const totalDistance = data.reduce((sum, d) => sum + d.distance, 0);
   const totalScreenTime = data.reduce((sum, d) => sum + d.screenTime, 0);
-  const avgSteps = Math.round(totalSteps / data.length);
-
-  const streak = 5;
+  const avgSteps = data.length > 0 ? Math.round(totalSteps / data.length) : 0;
 
   return (
     <motion.div
@@ -141,7 +161,7 @@ export const StatsSection = () => {
       <div className="grid grid-cols-2 gap-4 mb-4">
         <StatCard
           title="Total Steps"
-          value={totalSteps.toLocaleString()}
+          value={totalSteps.toLocaleString().replace(/,/g, ' ')}
           unit="steps"
           change={12}
           icon={<Footprints className="w-5 h-5 text-primary-foreground" />}
@@ -165,7 +185,7 @@ export const StatsSection = () => {
         />
         <StatCard
           title="Avg Steps/Day"
-          value={avgSteps.toLocaleString()}
+          value={avgSteps.toLocaleString().replace(/,/g, ' ')}
           unit="per day"
           change={-3}
           icon={<Trophy className="w-5 h-5 text-primary-foreground" />}
@@ -212,7 +232,7 @@ export const StatsSection = () => {
         </div>
       </motion.div>
 
-      {/* Screen Time Chart */}
+      {/* Screen Time Chart with Labels */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -223,9 +243,9 @@ export const StatsSection = () => {
           <Timer className="w-5 h-5 text-primary" />
           <h3 className="font-display font-semibold text-foreground">Screen Time Earned</h3>
         </div>
-        <div className="h-40">
+        <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
+            <BarChart data={data} margin={{ top: 20, right: 10, left: 10, bottom: 0 }}>
               <defs>
                 <linearGradient id="barGradientHome" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="hsl(200, 100%, 50%)" />
@@ -239,7 +259,13 @@ export const StatsSection = () => {
                 tick={{ fill: "hsl(220, 10%, 55%)", fontSize: 12 }}
               />
               <YAxis hide />
-              <Bar dataKey="screenTime" fill="url(#barGradientHome)" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="screenTime" fill="url(#barGradientHome)" radius={[8, 8, 0, 0]}>
+                <LabelList 
+                  dataKey="screenTime" 
+                  position="top" 
+                  content={renderCustomBarLabel}
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -454,20 +454,14 @@ export default function Pass() {
               whileTap={{ scale: 0.95 }}
             />
           </Link>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Balance</p>
-              <p className="font-display font-bold text-lg text-foreground">{formatBalance(screenTimeBalance)}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/settings")}
-              className="text-foreground hover:bg-primary/20"
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/settings")}
+            className="text-foreground hover:bg-primary/20"
+          >
+            <Settings className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 

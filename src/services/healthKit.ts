@@ -10,6 +10,13 @@ export interface HealthData {
 // Sample names for querying HealthKit
 const READ_PERMISSIONS = ['steps', 'distance', 'duration'];
 
+export interface DailyHealthData {
+  day: string;
+  steps: number;
+  distance: number;
+  screenTime: number;
+}
+
 class HealthKitService {
   private isNative: boolean = false;
   private plugin: any = null;
@@ -170,6 +177,77 @@ class HealthKitService {
 
   isAvailable(): boolean {
     return this.isNative;
+  }
+
+  // Get weekly data for stats
+  async getWeeklyData(): Promise<DailyHealthData[]> {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const result: DailyHealthData[] = [];
+    
+    if (!this.isNative || !this.plugin) {
+      // Return mock data for web preview
+      const today = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        result.push({
+          day: days[date.getDay()],
+          steps: Math.floor(Math.random() * 15000) + 3000,
+          distance: Math.floor(Math.random() * 10) + 2,
+          screenTime: Math.floor(Math.random() * 80) + 20,
+        });
+      }
+      return result;
+    }
+
+    try {
+      const today = new Date();
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+
+        const queryOptions = {
+          startDate: startOfDay.toISOString(),
+          endDate: endOfDay.toISOString(),
+          limit: 0,
+        };
+
+        const stepsResult = await this.plugin.queryHKitSampleType({
+          ...queryOptions,
+          sampleName: 'stepCount',
+        });
+
+        const distanceResult = await this.plugin.queryHKitSampleType({
+          ...queryOptions,
+          sampleName: 'distanceWalkingRunning',
+        });
+
+        const steps = Math.round(this.sumQuantity(stepsResult?.resultData));
+        const distance = Math.round(this.sumQuantity(distanceResult?.resultData) / 1000); // Convert to km
+        const screenTime = this.calculateScreenTimeEarned({ steps, distance: distance * 1000, activeMinutes: 0 });
+
+        result.push({
+          day: days[date.getDay()],
+          steps,
+          distance,
+          screenTime,
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error fetching weekly data:', error);
+      // Return empty data on error
+      return days.slice(0, 7).map((day) => ({
+        day,
+        steps: 0,
+        distance: 0,
+        screenTime: 0,
+      }));
+    }
   }
 }
 
