@@ -409,7 +409,7 @@ export default function ParentDashboard() {
                     screenTimeRemaining={child.screenTimeRemaining}
                     activityProgress={child.activityProgress}
                     isLocked={child.isLocked}
-                    onGrantTime={() => handleGrantTime(child.id, child.name)}
+                    onGrantTime={() => navigate(`/parent/screen-time/${child.id}`)}
                     onViewDetails={() => toast.info(`Viewing ${child.name}'s details`)}
                     onRemove={() => handleRemoveChild(child.id, child.name)}
                   />
