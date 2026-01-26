@@ -21,7 +21,6 @@ import HelpSupport from "./pages/HelpSupport";
 import Downtime from "./pages/parent/Downtime";
 import AppLimits from "./pages/parent/AppLimits";
 import AlwaysAllowed from "./pages/parent/AlwaysAllowed";
-import ScreenTimeControl from "./pages/parent/ScreenTimeControl";
 
 const queryClient = new QueryClient();
 
@@ -138,14 +137,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRole="parent">
             <AlwaysAllowed />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/parent/screen-time/:childId" 
-        element={
-          <ProtectedRoute allowedRole="parent">
-            <ScreenTimeControl />
           </ProtectedRoute>
         } 
       />

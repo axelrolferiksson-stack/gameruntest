@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Clock, Activity, Tv, Trash2 } from "lucide-react";
+import { Clock, Activity, Gift, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   AlertDialog,
@@ -106,8 +106,8 @@ export const ChildCard = ({
       </div>
 
       <Button variant="reward" className="w-full" onClick={onGrantTime}>
-        <Tv className="w-4 h-4" />
-        Screen Time Control
+        <Gift className="w-4 h-4" />
+        Grant Screen Time
       </Button>
     </motion.div>
   );
