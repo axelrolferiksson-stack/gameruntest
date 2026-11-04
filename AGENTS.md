@@ -1,0 +1,2 @@
+## Native health integration
+- Keep the health plugin compatible with the installed Capacitor major and adapt native reads in the health service; incompatible peer dependencies prevent clean local installation.
