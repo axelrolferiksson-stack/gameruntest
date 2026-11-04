@@ -1,5 +1,7 @@
 // HealthKit Service for iOS native integration
-// Uses @perfood/capacitor-healthkit plugin for real device data
+// Uses the Capacitor 8-compatible Health plugin for real device data
+import { Capacitor } from '@capacitor/core';
+import { Health, type HealthDataType } from '@capgo/capacitor-health';
 
 export interface HealthData {
   steps: number;
@@ -8,7 +10,7 @@ export interface HealthData {
 }
 
 // Sample names for querying HealthKit
-const READ_PERMISSIONS = ['steps', 'distance', 'duration'];
+const READ_PERMISSIONS: HealthDataType[] = ['steps', 'distance', 'exerciseTime'];
 
 export interface DailyHealthData {
   day: string;
@@ -19,11 +21,11 @@ export interface DailyHealthData {
 
 class HealthKitService {
   private isNative: boolean = false;
-  private plugin: any = null;
+  private plugin: typeof Health | null = null;
 
   constructor() {
     // Check if we're running in a Capacitor native environment
-    this.isNative = typeof (window as any).Capacitor !== 'undefined';
+    this.isNative = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
     this.initPlugin();
   }
 
@@ -31,8 +33,7 @@ class HealthKitService {
     if (this.isNative) {
       try {
         // Dynamic import to avoid issues in web environment
-        const { CapacitorHealthkit } = await import('@perfood/capacitor-healthkit');
-        this.plugin = CapacitorHealthkit;
+        this.plugin = Health;
       } catch (error) {
         console.log('HealthKit plugin not available:', error);
         this.plugin = null;
@@ -59,7 +60,6 @@ class HealthKitService {
       }
 
       await this.plugin.requestAuthorization({
-        all: [],
         read: READ_PERMISSIONS,
         write: [],
       });
@@ -73,7 +73,7 @@ class HealthKitService {
   }
 
   async getTodayData(): Promise<HealthData> {
-    if (!this.isNative || !this.plugin) {
+    if (!this.isNative) {
       // Return mock data for web preview
       return {
         steps: Math.floor(Math.random() * 5000) + 2000,
@@ -93,19 +93,19 @@ class HealthKitService {
       };
 
       // Query steps
-      const stepsResult = await this.plugin.queryHKitSampleType({
+      const stepsResult = await this.querySamples({
         ...queryOptions,
         sampleName: 'stepCount',
       });
 
       // Query distance (walking + running)
-      const distanceResult = await this.plugin.queryHKitSampleType({
+      const distanceResult = await this.querySamples({
         ...queryOptions,
         sampleName: 'distanceWalkingRunning',
       });
 
       // Query exercise time
-      const exerciseResult = await this.plugin.queryHKitSampleType({
+      const exerciseResult = await this.querySamples({
         ...queryOptions,
         sampleName: 'appleExerciseTime',
       });
@@ -131,7 +131,7 @@ class HealthKitService {
   }
 
   async getDistanceSince(startDate: Date): Promise<number> {
-    if (!this.isNative || !this.plugin) {
+    if (!this.isNative) {
       // Return mock data for web preview - simulate walking
       const elapsedSeconds = (Date.now() - startDate.getTime()) / 1000;
       // Simulate ~1.5 m/s walking speed with some randomness
@@ -139,7 +139,7 @@ class HealthKitService {
     }
 
     try {
-      const distanceResult = await this.plugin.queryHKitSampleType({
+      const distanceResult = await this.querySamples({
         sampleName: 'distanceWalkingRunning',
         startDate: startDate.toISOString(),
         endDate: new Date().toISOString(),
@@ -153,10 +153,28 @@ class HealthKitService {
     }
   }
 
-  private sumQuantity(data: any[] | undefined): number {
+  private async querySamples(options: { sampleName: string; startDate: string; endDate: string; limit: number }) {
+    const types: Record<string, HealthDataType> = {
+      stepCount: 'steps',
+      distanceWalkingRunning: 'distance',
+      appleExerciseTime: 'exerciseTime',
+    };
+    const dataType = types[options.sampleName];
+    if (!dataType) throw new Error('Unsupported health data type');
+    const { samples } = await Health.queryAggregated({
+      dataType,
+      startDate: options.startDate,
+      endDate: options.endDate,
+      bucket: 'day',
+      aggregation: 'sum',
+    });
+    return { resultData: samples };
+  }
+
+  private sumQuantity(data: { value: number }[] | undefined): number {
     if (!data || !Array.isArray(data)) return 0;
     return data.reduce((sum, item) => {
-      const value = item.quantity || item.value || 0;
+      const value = item.value || 0;
       return sum + value;
     }, 0);
   }
@@ -184,7 +202,7 @@ class HealthKitService {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const result: DailyHealthData[] = [];
     
-    if (!this.isNative || !this.plugin) {
+    if (!this.isNative) {
       // Return mock data for web preview
       const today = new Date();
       for (let i = 6; i >= 0; i--) {
@@ -215,12 +233,12 @@ class HealthKitService {
           limit: 0,
         };
 
-        const stepsResult = await this.plugin.queryHKitSampleType({
+        const stepsResult = await this.querySamples({
           ...queryOptions,
           sampleName: 'stepCount',
         });
 
-        const distanceResult = await this.plugin.queryHKitSampleType({
+        const distanceResult = await this.querySamples({
           ...queryOptions,
           sampleName: 'distanceWalkingRunning',
         });
